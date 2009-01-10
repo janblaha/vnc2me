@@ -2,20 +2,36 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 [Setup]
-AppName=VNC2Me
-AppVerName=VNC2Me 0.0.2.x
+AppName=VNC2Me SC
 AppPublisher=Secure IT Technologies Pty Ltd
 AppPublisherURL=http://secit.com.au
-AppSupportURL=http://vnc2me.secit.com.au
-AppUpdatesURL=http://vnc2me.secit.com.au
+AppSupportURL=http://vnc2me.org/forum.html
+AppUpdatesURL=http://vnc2me.org/downloads.html
+AppCopyright=Secure IT Technologies Pty Ltd
+;AppComments=
+;AppContact=
+;AppReadmeFile=
+;AppSupportPhone=
+AppVersion=0.1.0.1
+AppVerName=VNC2Me 0.1.0.1
+VersionInfoVersion=0.1.0.1
+
+LicenseFile=.\compiled\license.txt
 DefaultDirName={pf}\VNC2Me
 DefaultGroupName=VNC2Me
 AllowNoIcons=yes
-OutputBaseFilename=.\..\VNC2Me_install
+
+UninstallDisplayIcon={app}\v2m.ico
+ChangesAssociations=yes
+
+OutputBaseFilename=.\..\VNC2Me_SC_install
 SetupIconFile=.\compiled\v2m.ico
-Compression=lzma
+WindowShowCaption=no
+
+Compression=lzma/max
 SolidCompression=yes
 
+;SignedUninstaller=yes
 ;WizardImageFile=.\logo.bmp
 ;WizardSmallImageFile=.\logo.bmp
 
@@ -23,17 +39,23 @@ SolidCompression=yes
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
+;Name: "installvista"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 ;Name: "directicons"; Description: "{cm:CreateDirectIcons}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
 Source: ".\compiled\VNC2Me.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\compiled\license.txt"; DestDir: "{app}"; Flags: ignoreversion
 ;Source: ".\logo.bmp"; DestDir: "{app}"; Flags: ignoreversion
 ;Source: ".\compiled\icon1.ico"; DestDir: "{app}"; Flags: ignoreversion
-;Source: ".\compiled\icon2.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\compiled\v2m.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\compiled\vnc2me_sc.ini"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\compiled\v2mplink.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\compiled\V2Msc.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\compiled\V2Mvwr.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Tasks: quicklaunchicon
+Source: ".\compiled\Aero_disable.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\compiled\.putty\sshhostkeys"; DestDir: "{app}\.putty"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

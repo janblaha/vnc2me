@@ -17,10 +17,20 @@
 	Setup all Global Vars for including into VNC2Me.
 
 #ce ----------------------------------------------------------------------------
+Const $SPI_SETMOUSESONAR =4125 
+Const $SPIF_DONT_UPDATE_PROFILE =0 
+Const $SPIF_SENDCHANGE =2 
+Const $SPIF_SENDWININICHANGE =2 
+Const $SPIF_UPDATEINIFILE =1 
+
+Const $GUI_SS_DEFAULT_RADIO = 0
+Const $GUI_ENABLE = 64
+Const $GUI_DISABLE = 128
+Const $GUI_FOCUS = 256
+Const $GUI_DEFBUTTON = 512
 
 ; declare Main GUI Language
-Dim $V2M_GUI_Language = IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "LANGUAGE", "Lang_English")
-
+Global $V2M_GUI_Language = "Lang_"&IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "LANGUAGE", "")
 ; Program Title's, Version, etc
 Global $V2M_Version = FileGetVersion(@ScriptFullPath)
 Global $V2M_Name = IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "APPName", "VNC2Me")
@@ -33,133 +43,148 @@ Global $V2MPortMax = 30000				; Port ranges for session ID's
 Global $V2M_SessionCode					; Session code from input or generated between the above two numbers
 Global $V2M_SC_SsnCodeRead				; Session code read from the input on SC Tab
 Global $V2MGUITimer = 0					; has the Timer been started yet ???
-Global $V2M_EventLog					; holds current event displayed in status
+;Global $V2M_EventLog					; holds current event displayed in status
 Global $V2M_VNC_PasswordRegAdded		; when password is added to registry
 Global $V2M_Exit						; Exit out, close application cleanly
 Global $V2M_VNC_SC						; which VNC server Application is used
-Global $V2M_AutoReconnect				; if disconnected (or vnc closes) reconnects if 1
-Global $V2M_SSH_Port = 443				; what port is ssh connecting to ?
+Global $V2M_VNC_SVR
+Global $V2M_VNC_VWR
+
+Global $V2M_GUI_Main
+Global $V2M_GUI_DebugOutputEdit
+Global $V2M_GUI_Mini
+
+;declare host, user & pass, if include is commented out, script asks for them.
+Global $V2M_SSH[30]
+$V2M_SSH[1] = IniRead(@ScriptDir & "\vnc2me_sc.ini", "Vnc2MeServer", "Hostname", "")			;SSH_Hostname
+$V2M_SSH[2] = IniRead(@ScriptDir & "\vnc2me_sc.ini", "Vnc2MeServer", "Username", "")			;SSH_Username
+$V2M_SSH[3] = IniRead(@ScriptDir & "\vnc2me_sc.ini", "Vnc2MeServer", "Password", "")			;SSH_Password
 
 ; the following variables are for future use, to minimise the use of other variables
-Global $V2M_Status[5][3]					; Status of [0] is ConnectType (SC, SRV, VWR, VWRSRV)
-										; Status of [1] is state of each GUI [0]=main, [1]=mini, [2]=debug
-										; Status of [2] is 
-										; Status of [3] is 
+Global $V2M_Status[4][11]				; Status of [1][X] is ConnectType (SC, SVR, VWR, VWRSVR)
+										; Status of [2] is state of each GUI [1]=main, [2]=mini, [3]=debug, [4]=timer, 1 is active, 0 is inactive
+										; Status of [3] is state of connection [1]=sshwanted, [2]=sshstarted, [3]=sshconnected, [4]=scwanted, [5]=scstarted, [6]=SVRwanted, [7]SVRstarted, [8]=vwrscwanted, [9]vwrSVRwanted, [10]=vwrstarted
 										; Status of [4] is 
 										; Status of [5] is 
-;Global $V2M_Status[0][0]					; What type of Connection is being established
+										; Status of [6] is 
+
 
 ; Declare Main GUI dimensions
-Dim $V2M_GUI_MainWidth = 420			; width of main GUI
-Dim $V2M_GUI_MainHeight = 200			; height of main GUI
-Dim $V2M_GUI_MainTabWidth = $V2M_GUI_MainWidth - 20			; width of TAB in main GUI
-Dim $V2M_GUI_MainTabHeight = $V2M_GUI_MainHeight - 75		; Height of TAB in main GUI
+Global $V2M_GUI[50]
+$V2M_GUI[1] = 420			; width of main GUI
+$V2M_GUI[2] = 200			; height of main GUI
+$V2M_GUI[3] = $V2M_GUI[1] - 20			; width of TAB in main GUI
+$V2M_GUI[4] = $V2M_GUI[2] - 75		; Height of TAB in main GUI
 ; Declare Mini GUI dimensions
-Dim $V2M_GUI_MiniWidth = 275			; width of mini GUI
-Dim $V2M_GUI_MiniHeight = 40			; height of mini GUI
+$V2M_GUI[5] = 275			; width of mini GUI
+$V2M_GUI[6] = 41			; height of mini GUI
 
 
-;GUI ControlID's
-Dim $V2M_GUI_MainFileMenu
-Dim $V2M_GUI_MiniStatusBar
-Dim $V2M_GUI_MainStatusBar
-Dim $V2M_GUI_VWR_ButtonConnect
-Dim $V2M_GUI_VWR_ButtonStop
-Dim $V2M_GUI_VWR_InputCode
-Dim $V2M_GUI_VWR_
-Dim $V2M_GUI_MainHelpMenu
-Dim $V2M_GUI_MainAbout
-Dim $V2M_GUI_MainTab
-Dim $V2M_GUI_MainButtonExit
-Dim $V2M_GUI_SC_
-Dim $V2M_GUI_SC_InputCode
-Dim $V2M_GUI_SC_ButtonConnect
-Dim $V2M_GUI_SC_ButtonStop
-Dim $V2M_GUI_MiniFileMenu
-Dim $V2M_GUI_MiniSwap
-Dim $V2M_GUI_MiniHelpMenu
-Dim $V2M_GUI_MiniAbout
-Dim $V2M_GUI_MiniSessionCode
-Dim $V2M_GUI_Debug
-Dim $V2M_GUI_DebugButtonConnect
-Dim $V2M_GUI_DebugButtonStop
-Dim $V2M_GUI_DebugButtonCopy
-Dim $V2M_Tray_Exit
-Dim $V2M_Tray_GUISwap
+
+
+;Tray Icon Controls
+Global $V2M_Tray[10]
+;$V2M_Tray[1]		;Tray_Exit
+;$V2M_Tray[2]		;Tray_MenuShow
+;$V2M_Tray[3]		;Tray_Exit
+;$V2M_Tray[4]		;Tray_Exit
+;$V2M_Tray[5]		;Tray_Exit
+;Global $V2M_Tray_About
+;Global $V2M_Tray_GUIShowMini
+;Global $V2M_Tray_GUIShowTimer
+;Global $V2M_Tray_GUIShowDebug
+;Global $V2M_Tray_GUIShowNone
 
 ;misc
-Dim $BaseLeft
-Dim $BaseTop
-Dim $CurLeft
-Dim $CurTop
+Global $BaseLeft
+Global $BaseTop
+Global $CurLeft
+Global $CurTop
 
 ; is used by the session timer functions
-Global $V2M_TimerTotal = 0, $V2M_TimerStarted = 0, $V2M_SessionTimeStart = 0, $V2M_SessionTimeEnd = 0, $V2M_TimerStartTicks = 0
+Global $V2M_Timer[7]				;[1]=TimerTotal, [2]=TimerStarted, [3]=SessionTimeStart, [4]=SessionTimeEnd, [5]=TimerStartTicks, [6]=TimerTotalTicks
+Global $V2M_LoopCount				;counts to ten loops through program before checking stdin, stdout & stderr
+Global $V2M_MsgBox
+Global $V2M_GUI_Msg
+Global $V2M_TrayMsg
+Global $clipboard
+Global $V2M_EventDisplay				; Current Event being displayed (stops repeating same event)
 
-Dim $V2M_LoopCount													;counts to ten loops through program before checking stdin, stdout & stderr
 
-Dim $V2M_SSH_ReadCharsWaiting
-Dim $V2M_SSH_ErrCharsWaiting
-Dim $currentRead
-Dim $currentErr
-Dim $V2M_SSH_VNCDisconnect
-Dim $V2M_MsgBox
-
-Dim $V2M_GUI_Msg
-Dim $V2M_TrayMsg
-Dim $clipboard
-Dim $V2M_VNC_ViewerProcessID
+Global $V2M_ProcessIDs[5] ;[1]=ssh, [2]=vwr, [3]=sc, [4]=svr
 
 ; declare VARS for searching stdout & stderr
-Dim $V2M_SSH_DetectUsername = ".*ogin.*"							;what string to use to detect login
-Dim $V2M_SSH_DetectPassword = ".*assword.*"							;what string to use to detect password
-Dim $V2M_SSH_DetectNoHostKey = ".*host key is not cached.*"			;what string to use to detect Host key not cached
-Dim $V2M_SSH_DetectPortRefused = ".*refused.*"						;what string to use to detect when things are refused
-Dim $V2M_SSH_DetectVNCDisconnect = ".*Forwarded port closed.*"		;what string to use to detect when port closed, to start VNC again
-Dim $V2M_SSH_DetectConnected = ".*Allocated pty.*"					;what string to use to detect initial stable connection
+;$V2M_SSH[8]		;V2M_SSH_ReadCharsWaiting
+;$V2M_SSH[9]		;V2M_SSH_ErrCharsWaiting
+$V2M_SSH[11] = ".*ogin.*"							;what string to use to detect login
+$V2M_SSH[13] = ".*assword.*"							;what string to use to detect password
+$V2M_SSH[15] = ".*host key is not cached.*"			;what string to use to detect Host key not cached
+$V2M_SSH[17] = ".*refused.*"						;what string to use to detect when things are refused
+$V2M_SSH[19] = ".*Forwarded port closed.*"		;what string to use to detect when port closed, to start VNC again
+$V2M_SSH[21] = ".*Access granted.*"					;what string to use to detect initial stable connection
 
-Dim $V2M_SSH_ReadUsername			; ???
-Dim $V2M_SSH_ReadPassword			; ???
-Dim $V2M_SSH_ErrHostKey				; ???
-Dim $V2M_SSH_PortRefused			; ???
-Dim $V2M_SSH_Connected				; ???
-Dim $V2M_LoopCount					; how many loops have we done (approximated to seconds - not quite)
+;$V2M_SSH[12]			; ???
+;$V2M_SSH[14]			; ???
+;$V2M_SSH[16]				; ???
+;$V2M_SSH[18]			; ???
+;$V2M_SSH[20]
+;$V2M_SSH[22]				; ???
+;$V2M_LoopCount					; how many loops have we done (approximated to seconds - not quite)
 
-Dim $V2M_EventDisplay				; Current Event being displayed (stops repeating same event)
-;Dim $V2M_EventLog
+;Global $V2M_EventLog
 
-Dim $V2M_SSHStarted					; has SSH process been started yet ???
-Dim $V2M_SSH_ProcessID				; Contains Process ID for Plink.exe
-Dim $V2M_VNC_ProcessID				; Contains Process ID for VNC executables (not currently useful, but hopefully will be later)
-Dim $V2M_GUI_MainSwap				;???
-Dim $V2M_GUI_MiniNoTransparency
-Dim $V2M_GUI_MainMenuExit
-Dim $V2M_SSH_ProcessID
-Dim $V2M_SSH_PortFwdDirection
-Dim $V2M_VNC_SCStart
-Dim $V2M_VNC_SRVStart
-Dim $V2M_VNC_SCStarted
-Dim $V2M_VNC_SRVStarted
-Dim $V2M_GUI_DebugCheckbox
-;Dim $V2M_GUI_DebugShow
-Dim $V2M_GUI_VWR_SsnRndChbx_PreviousState = 0
-Dim $V2M_GUI_VWR_SsnRndChbx
+;Global $V2M_SSHStarted					; has SSH process been started yet ???
+;Global $V2M_GUI_MainSwap				;???
+;Global $V2M_GUI_MiniNoTransparency
+;Dim $V2M_SSH_ProcessID
+;Global $V2M_SSH_PortFwdDirection
+;Dim $V2M_VNC_SCStart
+;Dim $V2M_VNC_SVRStart
+;Dim $V2M_VNC_SCStarted
+;Dim $V2M_VNC_SVRStarted
 
 ; Declare Viewer Tab VARs to stop errors on removal of GUI
-Dim $V2M_GUI_VWR_
-Dim $V2M_GUI_VWR_InputCode
-Dim $V2M_GUI_VWR_SsnRndChbx
-Dim $V2M_GUI_VWR_ButtonConnect
-Dim $V2M_GUI_VWR_ButtonStop
+;Dim $V2M_GUI[10]
+;Dim $V2M_GUI[11]
+;Dim $V2M_GUI[12]
+;Dim $V2M_GUI[13]
 
-Dim $V2M_GUI_SRV_
-Dim $V2M_GUI_SRV_InputCode
-Dim $V2M_GUI_SRV_ButtonConnect
-Dim $V2M_GUI_SRV_ButtonStop
+;GUI ControlID's
+;Dim $V2M_GUI[7] 		;GUI_MainFileMenu
+;Dim $V2M_GUI[8]		;GUI_MiniStatusBar
+;Dim $V2M_GUI[9]		;GUI_MainStatusBar
+;Dim $V2M_GUI[10]		;GUI_VWR_ButtonConnect
+;Dim $V2M_GUI[11]		;GUI_VWR_ButtonStop
+;Dim $V2M_GUI[12]		;GUI_VWR_InputCode
+;Dim $V2M_GUI[13]		;GUI_VWR_TAB
+;Dim $V2M_GUI[14]		;GUI_MainHelpMenu
+;Dim $V2M_GUI[15]		;GUI_MainAbout
+;Dim $V2M_GUI[16]		;GUI_MainTab
+;Dim $V2M_GUI[17]		;GUI_MainButtonExit
+;Dim $V2M_GUI[18]		;GUI_SC_TAB
+;Dim $V2M_GUI[19]		;GUI_SC_InputCode
+;Dim $V2M_GUI[20]		;GUI_SC_ButtonConnect
+;Dim $V2M_GUI[21]		;GUI_SC_ButtonStop
+;Dim $V2M_GUI[22]		;GUI_MiniFileMenu
+;Dim $V2M_GUI[23]		;GUI_MiniSwap
+;Dim $V2M_GUI[24]		;GUI_MiniHelpMenu
+;Dim $V2M_GUI[25]		;GUI_MiniAbout
+;Dim $V2M_GUI[26]		;GUI_MiniSessionCode
+;Dim $V2M_GUI[27]		;GUI_Debug
+;Dim $V2M_GUI[28]		;GUI_DebugButtonConnect
+;Dim $V2M_GUI[29]		;GUI_DebugButtonStop
+;Dim $V2M_GUI[30]		;GUI_DebugButtonCopy
+;Dim $V2M_GUI[31]		;GUI_MiniButtonExit
+;Dim $V2M_GUI[32]		;GUI_MainMenuExit
+;Dim $V2M_GUI[33]		;GUI_MainDebugChbx
+;Dim $V2M_GUI[34]		;GUI_SVR_TAB
+;Dim $V2M_GUI[35]		;GUI_SVR_InputCode
+;Dim $V2M_GUI[36]		;GUI_SVR_ButtonConnect
+;Dim $V2M_GUI[37]		;GUI_SVR_ButtonStop
+;Dim $V2M_GUI[38]		;GUI_VWR_SsnRndChbx
+;Dim $V2M_GUI[39]		;GUI_SVR_SsnRndChbx
+;Dim $V2M_GUI[40]		;GUI_VWR_Radio_SC
+;Dim $V2M_GUI[41]		;GUI_VWR_Radio_SVR
 
 
 
-;Declare GUI Label VAR's
-Dim $V2M_GUI_MainLabelTab_VWR = IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "GUI_TAB_VIEW", "View Desktop")
-Dim $V2M_GUI_MainLabelTab_SRV = IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "GUI_TAB_SRV", "Start Collaboration")
-Dim $V2M_GUI_MainLabelTab_SC = IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "GUI_TAB_SC", "Share Desktop")

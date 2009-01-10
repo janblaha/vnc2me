@@ -1,75 +1,29 @@
-
-
-#Region --- Script analyzed by FreeStyle code Start 06.09.2008 - 20:04:12
-
-#EndRegion --- Script analyzed by FreeStyle code End - no patching necessary
-
-
-#Region --- Script analyzed by FreeStyle code Start 20.07.2008 - 11:14:56
-
-#EndRegion --- Script analyzed by FreeStyle code End - no patching necessary
 ;
 ; Misc FUNCTIONS
 ;
-Dim $V2M_GUI_Main
-Dim $V2M_VNC_ProcessID
-Dim $V2M_GUI_DebugOutputEdit
-Dim $V2M_GUI_MiniTitle
-Dim $V2M_GUI_Mini
-Dim $V2M_SSH_Hostname
 
 
-;===============================================================================
-;
-; Description:		Eventlog handler, sends logs to std windows debug (via dll)
-;					and GUI Statusbars
-; Parameter(s):		$V2M_EventLog	=	Text string to send to log
-;					$JDs_debug_only	=	0, text is display in statusbar. else, only sent to debug dll
-; Requirement(s):	
-; Return Value(s):	$V2M_EventDisplay
-; Author(s):		Jim Dolby
-; Note(s):			
-;
-;===============================================================================
-Func V2M_EventLog($V2M_EventLog='', $V2M_EventDisplay='', $JDs_debug_only='0')
-	If $V2M_EventLog = $V2M_EventDisplay Then
-		;do nothing
-	Else
-		If $JDs_debug_only = '0' Then
-			;send to minigui event log
-			GUICtrlSetData($V2M_GUI_MiniStatusBar, @CRLF & $V2M_EventLog, 1)
-			;send to maingui event log
-			GUICtrlSetData($V2M_GUI_MainStatusBar, @CRLF & $V2M_EventLog, 1)
-			;send to Tab3Debug event log
-			GUICtrlSetData($V2M_GUI_DebugOutputEdit, @CRLF & $V2M_EventLog, 1)
-		ElseIf $JDs_debug_only = '1' Then
-			;send to Tab3Debug event log
-			GUICtrlSetData($V2M_GUI_DebugOutputEdit, @CRLF & $V2M_EventLog, 1)
-		EndIf
-		DllCall("kernel32.dll", "none", "OutputDebugString", "str", "V2M - " & $V2M_EventLog)
-		$V2M_EventDisplay = $V2M_EventLog
-		Sleep(100)
-	EndIf
-	Return $V2M_EventDisplay
-EndFunc
+
 ;===============================================================================
 ;
 ; Description:		Ask if you want to add host key
 ; Parameter(s):		none
-; Requirement(s):	$V2M_SSH_ProcessID needs to be gloabal, and hold controlID for plink.exe
+; Requirement(s):	$V2M_ProcessIDs[1] needs to be global, and hold controlID for plink.exe
 ; Return Value(s):	none
 ; Author(s):		Jim Dolby
 ; Note(s):			
 ;
 ;===============================================================================
 Func V2MAddHostKey()
-	Dim $msgbox
+	Local $msgbox
 	;Add Host key to knownhosts
 	$V2M_EventDisplay=V2M_EventLog('STDERR found', $V2M_EventDisplay, 1)
 ;	JDs_debug("STDERR found")
 	$msgbox = MsgBox(4, "The host is not cached", "This Host is not known, do you want to add it to known hosts ???")
 	If $msgbox = 6 Then
-		StdinWrite($V2M_SSH_ProcessID, "y " & @CR)
+		StdinWrite($V2M_ProcessIDs[1], "y " & @CR)
+	ElseIf $msgbox = 7 Then
+		StdinWrite($V2M_ProcessIDs[1], "n " & @CR)
 	EndIf
 EndFunc   ;==>V2MAddHostKey
 
@@ -84,15 +38,17 @@ EndFunc   ;==>V2MAddHostKey
 ;
 ;===============================================================================
 Func V2MExitVNC()
-	$V2M_EventDisplay=V2M_EventLog('Waiting for VNC to close cleanly', $V2M_EventDisplay, 0)
-	ProcessWaitClose("v2msc.exe", 5)
-	ProcessWaitClose("V2Mvwr.exe", 5)
-	If ProcessExists("V2Mvwr.exe") Or ProcessExists("v2msc.exe") Then
-		ProcessClose("v2msc.exe")
-		ProcessClose("V2Mvwr.exe")
-		$V2M_EventDisplay=V2M_EventLog('Forcing VNC Closed', $V2M_EventDisplay, 0)
+	$V2M_EventDisplay=V2M_EventLog('VNC - Waiting to close cleanly', $V2M_EventDisplay, 0)
+	ProcessWaitClose($V2M_VNC_SC, 5)
+	ProcessWaitClose($V2M_VNC_VWR, 5)
+	ProcessWaitClose($V2M_VNC_SVR, 5)
+	If ProcessExists($V2M_VNC_VWR) Or ProcessExists($V2M_VNC_SC) Or ProcessExists($V2M_VNC_SVR) Then
+		$V2M_EventDisplay=V2M_EventLog('VNC - Closed Forcibly', $V2M_EventDisplay, 0)
+		ProcessClose($V2M_VNC_SC)
+		ProcessClose($V2M_VNC_VWR)
+		ProcessClose($V2M_VNC_SVR)
 	Else
-		$V2M_EventDisplay=V2M_EventLog('VNC Closed Cleanly', $V2M_EventDisplay, 0)
+		$V2M_EventDisplay=V2M_EventLog('VNC - Closed Cleanly', $V2M_EventDisplay, 0)
 	EndIf
 EndFunc   ;==>V2MExit
 
@@ -100,21 +56,21 @@ EndFunc   ;==>V2MExit
 ;
 ; Description:		exits all v2m ssh apps
 ; Parameter(s):		none
-; Requirement(s):	$V2M_SSH_ProcessID needs to be gloabal, and hold controlID for plink.exe
+; Requirement(s):	$V2M_ProcessIDs[1] needs to be gloabal, and hold controlID for plink.exe
 ; Return Value(s):	none
 ; Author(s):		Jim Dolby
 ; Note(s):			
 ;
 ;===============================================================================
 Func V2MExitSSH()
-	StdinWrite($V2M_SSH_ProcessID, "exit" & @CR)
-	$V2M_EventDisplay=V2M_EventLog('Waiting for SSH to close cleanly', $V2M_EventDisplay, 0)
+	StdinWrite($V2M_ProcessIDs[1], " exit" & @CR)
+	$V2M_EventDisplay=V2M_EventLog('SSH - Waiting to close cleanly', $V2M_EventDisplay, 0)
 	ProcessWaitClose("v2mplink.exe", 3)
 	If ProcessExists("v2mplink.exe") Then
 		ProcessClose("v2mplink.exe")
-		$V2M_EventDisplay=V2M_EventLog('Forcing SSH Closed', $V2M_EventDisplay, 0)
+		$V2M_EventDisplay=V2M_EventLog('SSH - Closed Forcibly', $V2M_EventDisplay, 0)
 	Else
-		$V2M_EventDisplay=V2M_EventLog('SSH Closed Cleanly', $V2M_EventDisplay, 0)
+		$V2M_EventDisplay=V2M_EventLog('SSH - Closed Cleanly', $V2M_EventDisplay, 0)
 	EndIf
 EndFunc   ;==>V2MExit
 
@@ -145,42 +101,6 @@ EndFunc   ;==>V2MRandomPort
 Func V2MAboutBox ()
 	MsgBox(0, "About", $V2M_GUI_MainTitle & @CRLF & @CRLF & "© 2008 Sec IT.")
 EndFunc
-
-;===============================================================================
-;
-; Description:		Swaps between the GUI's
-; Parameter(s):		none
-; Requirement(s):	$V2M_GUI_MainTitle, $V2M_GUI_MiniTitle, $V2M_GUI_Main and $V2M_GUI_Mini
-;						GUI Titles, and control ID's from creating the GUI's
-; Return Value(s):	"GUI - Swaping UI"
-; Author(s):		Jim Dolby
-; Note(s):			
-;
-;===============================================================================
-Func V2MGuiSwap($GUI_title = '', $GUI_state = '')
-	If $V2M_GUI_MiniTitle = "" Then
-		; do nothing
-	Else
-		;		MsgBox(0, "Debug", $which, 2)
-		If WinActive($V2M_GUI_MiniTitle) Then
-			;			MsgBox(0, "Debug", $V2M_GUI_MiniTitle & " is active", 2)
-			GUISwitch($V2M_GUI_Main)
-			GUISetState(@SW_SHOW, $V2M_GUI_MainTitle)
-			GUISwitch($V2M_GUI_Mini)
-			GUISetState(@SW_HIDE, $V2M_GUI_MiniTitle)
-			GUISwitch($V2M_GUI_Main)
-		Else
-			;			MsgBox(0, "Debug", $V2M_GUI_MiniTitle & " is not active", 2)
-			GUISwitch($V2M_GUI_Mini)
-			GUISetState(@SW_SHOW, $V2M_GUI_MiniTitle)
-			GUISwitch($V2M_GUI_Main)
-			GUISetState(@SW_HIDE, $V2M_GUI_MainTitle)
-			GUISwitch($V2M_GUI_Mini)
-		EndIf
-		Return "GUI - Swaping UI"
-	EndIf
-EndFunc   ;==>V2MGuiSwap
-
 
 ;===============================================================================
 ;
@@ -222,7 +142,7 @@ Func V2MInBoxSTDINWrite($WriteWhere, $WriteWhat = "", $InBoxTitle = "Password", 
 	If $WriteWhat = "" Then
 		$WriteWhat = InputBox($InBoxTitle, $InBoxText, "", $InBoxPassHash)
 		If @error = 1 Then
-			Exit
+			$V2M_Exit = 1
 		EndIf
 	EndIf
 	;writes "password"
@@ -235,54 +155,176 @@ EndFunc   ;==>V2MInBoxSTDINWrite
 ;===============================================================================
 ;
 ; Description:		Creates the SSH tunnel
-; Parameter(s):		$V2M_SSH_PortFwdDirection	= Port tunneling direction :Local;Remote;Both.
-; Requirement(s):	$V2M_GUI_DebugOutputEdit, $V2M_SessionCode, $V2M_SSH_Hostname
-; Return Value(s):	$V2M_SSH_ProcessID
+; Parameter(s):		
+; Requirement(s):	$V2M_GUI_DebugOutputEdit, $V2M_SessionCode, $V2M_SSH[1]
+; Return Value(s):	$V2M_ProcessIDs[1]
 ; Author(s):		Jim Dolby
 ; Note(s):			
 ;
 ;===============================================================================
 ;Func V2MSSHConnect($V2M_SessionCode = '', $RunWhat = 'v2mplink', $StandardHost = '', $RunWhere = @ScriptDir)
-Func V2MSSHConnect($V2M_SSH_PortFwdDirection = 'Both')
-	Dim $Local_ConnectString
-;	$V2M_AutoReconnect = 1
-	$V2M_EventLog = "SSH - Starting at " & @HOUR & ":" & @MIN & ":" & @SEC & " (Port Dir = " & $V2M_SSH_PortFwdDirection & ", Port# = " & $V2M_SessionCode & ")"
-	$V2M_EventDisplay = V2M_EventLog($V2M_EventLog, $V2M_EventDisplay, 0)
-
+Func V2MSSHConnect()
+	Local $Local_ConnectString
+	$V2M_EventDisplay = V2M_EventLog("SSH - Starting at " & @HOUR & ":" & @MIN & ":" & @SEC & ", for "&$V2M_Status[1][1]&" Connections, (Session Code = " & $V2M_SessionCode & ")", $V2M_EventDisplay, 'Full')
 	ProcessClose('v2mplink.exe')
 
-	If $V2M_SSH_Hostname = "" Then
-		$V2M_SSH_Hostname = InputBox("Host Server", "What server do i connect to ?")
-		If @error = 1 Then
-			$V2M_AutoReconnect = 0
-		ElseIf $V2M_SSH_Hostname = "" Then
-			$V2M_AutoReconnect = 0
+	If $V2M_SessionCode = '' Then
+		MsgBox(0, "Error", "Please enter the Session Code and try again", 60)
+		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code was blank", $V2M_EventDisplay, 'dll')
+		$V2M_Status[3][1] = 0 ; SSH notwanted
+	Else
+		If $V2M_SSH[1] = "" Then
+			$V2M_SSH[1] = InputBox("Host Server", "What server do i connect to ?")
+			If @error = 1 Then
+				$V2M_Status[3][1] = 0		;sshwanted = 0
+			ElseIf $V2M_SSH[1] = "" Then
+				$V2M_Status[3][1] = 0		;sshwanted = 0
+			EndIf
 		EndIf
-	EndIf
 
-	If $V2M_AutoReconnect = 1 Then
-		If $V2M_Status[0][0] = 'VWR' Then
-			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH_Hostname & ' -v -P ' & $V2M_SSH_Port
-		ElseIf $V2M_Status[0][0] = 'SC' Then
-			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25400:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH_Hostname & ' -v -P ' & $V2M_SSH_Port
+		If $V2M_Status[1][1] = 'VWR' Then
+			If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SC_ONLY", 0) = 1 Then
+				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_TITLE", "VWR_STARTSC_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE2", ""), 30)
+				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH[1] & ' -v -N'
+				$V2M_Status[3][8] = 1
+			ElseIf IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VWR_VWR_SVR_ONLY", 0) = 1 Then
+				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_TITLE", "VWR_STARTSVR_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE2", ""), 30)
+				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25900:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
+				$V2M_Status[3][9] = 1
+			Else
+				If $V2M_Status[3][8] = 1 Or GUICtrlRead($V2M_GUI[40]) = 1 Then ;vwrscwanted
+					TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_TITLE", "VWR_STARTSC_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE2", ""), 30)
+					$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH[1] & ' -v -N'
+					$V2M_Status[3][8] = 1
+				ElseIf $V2M_Status[3][9] = 1 Or GUICtrlRead($V2M_GUI[41]) = 1 Then ;vwrsvrwanted
+					TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_TITLE", "VWR_STARTSVR_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE2", ""), 30)
+					$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25900:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
+					$V2M_Status[3][9] = 1
+				Else
+					MsgBox(1, "VWR for SC", "No Viewer connection type chosen"&@CRLF&"SC type will be selected" , 10)
+					If @error=-1 Or @error=1 Then 
+						GUICtrlSetState($V2M_GUI[40], 1)		;Check the SC vwr radio item.
+						$V2M_Status[3][8] = 1 ;vwrSCwanted
+					Else
+						$V2M_Status[1][1] = ''
+						$V2M_Status[3][1] = 0		;sshwanted = 0
+					EndIf
+				EndIf
+			EndIf
+
+;			If ($V2M_Status[3][9] = 1) Or (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VWR_VWR_SVR_ONLY", 0) = 1) Then		;vwrSVRwanted
+;				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25900:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
+;			Else
+;				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH[1] & ' -v -N'
+;			EndIf
+		ElseIf $V2M_Status[1][1] = 'SVR' Then
+			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH[1] & ' -v -N'
+		ElseIf $V2M_Status[1][1] = 'SC' Then
+			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25400:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
 		Else
-			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 -L 25400:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH_Hostname & ' -v -P ' & $V2M_SSH_Port
+			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 -L 25400:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
 		EndIf
-
-;		If $V2M_SSH_PortFwdDirection = 'Local' Then
-;			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25400:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH_Hostname & ' -v'
-;		ElseIf $V2M_SSH_PortFwdDirection = 'Remote' Then
-;			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH_Hostname & ' -v'
-;		Else
-;			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 -L 25400:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH_Hostname & ' -v'
-;		EndIf
-;		;	Run child process and provide $VAR for console i/o.	1 (1) = Provide a handle to the child's STDIN stream	2 (2) = Provide a handle to the child's STDOUT stream	4 (4) = Provide a handle to the child's STDERR stream
-		$V2M_SSH_ProcessID = Run($Local_ConnectString, @ScriptDir, @SW_HIDE, 7)
-;		$V2M_EventDisplay=V2M_EventLog("RUN - Starting SSH at " & @HOUR & ":" & @MIN & ":" & @SEC & " (remote port " & $V2M_SessionCode & ")" & @CRLF, $V2M_EventDisplay, 0)
-	
-		Return $V2M_SSH_ProcessID
+		$V2M_ProcessIDs[1] = Run($Local_ConnectString, @ScriptDir, @SW_MINIMIZE, 7)
+		$V2M_EventDisplay=V2M_EventLog("RUN - Starting SSH at " & @HOUR & ":" & @MIN & ":" & @SEC & " (remote port " & $V2M_SessionCode & ")" & @CRLF, $V2M_EventDisplay, 'dll')
+		Return $V2M_ProcessIDs[1]
+		$V2M_Status[3][2] = 1 ;ssh started
 	EndIf
 EndFunc   ;==>V2MSSHConnect
+;===============================================================================
+;
+; Description:		Checks if appropriate processes running, and if not, turns that flag off
+; Parameter(s):		None
+; Requirement(s):	$V2M_Status[3][X] 
+; Return Value(s):	Nill
+; Author(s):		Jim Dolby
+; Note(s):			Only checked every 100 cycles of the While loop.
+;
+;===============================================================================
+
+Func V2M_CheckRunning()
+	If $V2M_Status[3][5] Then ;scstarted
+		If Not ProcessExists($V2M_VNC_SC) Then
+			$V2M_Status[3][5] = 0
+			$V2M_EventDisplay = V2M_EventLog($V2M_VNC_SC & " has Closed", $V2M_EventDisplay, 'dll')
+		EndIf
+	EndIf
+	If $V2M_Status[3][7] Then ;SVRstarted
+		If Not ProcessExists($V2M_VNC_SVR) Then
+			$V2M_Status[3][7] = 0
+			$V2M_EventDisplay = V2M_EventLog($V2M_VNC_SVR & " has Closed", $V2M_EventDisplay, 'dll')
+		EndIf
+	EndIf
+	If $V2M_Status[3][10] Then ;vwrstarted
+		If Not ProcessExists($V2M_VNC_VWR) Then
+			$V2M_Status[3][10] = 0
+			$V2M_EventDisplay = V2M_EventLog($V2M_VNC_VWR & " has Closed", $V2M_EventDisplay, 'dll')
+		EndIf
+	EndIf
+	If $V2M_Status[3][2] Then ;sshstarted
+		If Not ProcessExists("v2mplink.exe") Then 
+			V2M_startvnc()
+			$V2M_Status[3][2] = 0
+			$V2M_Status[3][3] = 0
+			$V2M_Status[3][5] = 0
+			$V2M_Status[3][7] = 0
+			$V2M_Status[3][10] = 0
+			$V2M_EventDisplay = V2M_EventLog("v2mplink.exe has Closed, Full reconnect", $V2M_EventDisplay, 'dll')
+		EndIf
+	EndIf
+EndFunc   ;==>V2M_CheckRunning
+
+;===============================================================================
+;
+; Description:		Starts the Appropriate VNC Application
+; Parameter(s):		Nill
+; Requirement(s):	$V2M_Status[3][X] 
+; Return Value(s):	Nill
+; Author(s):		Jim Dolby
+; Note(s):			Only checked every 100 cycles of the While loop.
+;
+;===============================================================================
+Func V2M_startvnc($how='ssh')
+	$V2M_EventDisplay = V2M_EventLog("VNC - Starting VNC"&@CRLF&"$V2M_Status[3][4] = "&$V2M_Status[3][4]&@CRLF&"$V2M_Status[3][6] = "&$V2M_Status[3][6]&@CRLF&"$V2M_Status[3][8] = "&$V2M_Status[3][8]&@CRLF&"$V2M_Status[3][9] = "&$V2M_Status[3][9], $V2M_EventDisplay, 'dll')
+	If $how = "ssh" Then
+		If $V2M_Status[3][4] Then ;scwanted
+			If Not $V2M_Status[3][5] Then
+				$V2M_EventDisplay = V2M_EventLog("VNC - Starting SC via SSH", $V2M_EventDisplay, 'debug')
+;				If ProcessExists($V2M_VNC_SC) Then ProcessClose($V2M_VNC_SC)
+				$V2M_ProcessIDs[3] = Run($V2M_VNC_SC & " -connect 127.0.0.1:25400", @ScriptDir, @SW_HIDE, 7) ;run sc
+				$V2M_Status[3][5] = 1		;flag As started
+				Sleep(2000)
+				Return("SCviaSSH")
+			EndIf
+		ElseIf $V2M_Status[3][6] Then ;svrwanted
+			If Not $V2M_Status[3][7] Then
+				$V2M_EventDisplay = V2M_EventLog("VNC - Starting SVR via SSH", $V2M_EventDisplay, 'debug')
+;				If ProcessExists($V2M_VNC_SVR) Then ProcessClose($V2M_VNC_SVR)
+				$V2M_ProcessIDs[4] = Run($V2M_VNC_SVR & " AcceptCutText=0 AcceptPointerEvents=0 AcceptKeyEvents=0 AlwaysShared=1 LocalHost=1 SecurityTypes=None PortNumber=25900", @ScriptDir, @SW_HIDE, 7) ;run svr
+				$V2M_Status[3][7] = 1 ;	flag As started
+				Sleep(2000)
+				Return("SVRviaSSH")
+			EndIf
+		ElseIf $V2M_Status[3][8] Then ;vwrscwanted
+			If $V2M_Status[3][10] <> 1 Then
+				$V2M_EventDisplay = V2M_EventLog("VNC - Starting VWR for SC via SSH", $V2M_EventDisplay, 'debug')
+				$V2M_ProcessIDs[2] = Run($V2M_VNC_VWR & " -listen 15500 -8greycolours -autoscaling", @ScriptDir, @SW_MINIMIZE, 7) ;run vwr For sc connection
+;				MsgBox(0, 'Debug', '@error = '&@error&@CRLF&'$V2M_ProcessIDs[2] = '&$V2M_ProcessIDs[2],3)
+;				If ProcessExists($V2M_VNC_VWR) Then ProcessClose($V2M_VNC_VWR)
+				$V2M_Status[3][10] = 1 ;	flag As started
+				Return("VWRSCviaSSH")
+			EndIf
+		ElseIf $V2M_Status[3][9] Then ;vwrsvrwanted
+			If $V2M_Status[3][10] <> 1 Then
+				$V2M_EventDisplay = V2M_EventLog("VNC - Starting VWR for SVR via SSH", $V2M_EventDisplay, 'debug')
+				$V2M_ProcessIDs[2] = Run($V2M_VNC_VWR & " localhost::25900 /8greycolors/autoreconnect 1 /shared /belldeiconify /autoscaling", @ScriptDir, @SW_MINIMIZE, 7) ;run vwr For svr connection
+;				MsgBox(0, 'Debug', '@error = '&@error&@CRLF&'$V2M_ProcessIDs[2] = '&$V2M_ProcessIDs[2],3)
+;				If ProcessExists($V2M_VNC_VWR) Then ProcessClose($V2M_VNC_VWR)
+				$V2M_Status[3][10] = 1 ;	flag As started
+				Return("VWRSVRviaSSH")
+			EndIf
+		EndIf
+	EndIf
+EndFunc   ;==>startvnc
 
 ;===============================================================================
 ;
@@ -302,6 +344,44 @@ EndFunc   ;==>V2MGUICtrlSetData
 
 ;===============================================================================
 ;
+; Description:		Eventlog handler, sends logs to std windows debug (via dll)
+;					and GUI Statusbars
+; Parameter(s):		$V2M_EventLog	=	Text string to send to log
+;					$JDs_debug_only	=	0, text is display in statusbar. else, only sent to debug dll
+; Requirement(s):	
+; Return Value(s):	$V2M_EventDisplay
+; Author(s):		Jim Dolby
+; Note(s):			
+;
+;===============================================================================
+Func V2M_EventLog($V2M_EventLog='', $V2M_EventDisplay='', $JDs_debug_only='dll')
+	If $V2M_EventLog = $V2M_EventDisplay Then
+		;do nothing
+	Else
+		If $JDs_debug_only = '0' Or $JDs_debug_only = 'full' Then
+;		MsgBox(0, "Debug", $JDs_debug_only, 2)
+			;send to minigui event log
+			GUICtrlSetData($V2M_GUI[8], @CRLF & $V2M_EventLog, 1)
+			;send to maingui event log
+			GUICtrlSetData($V2M_GUI[9], @CRLF & $V2M_EventLog, 1)
+			;send to Tab3Debug event log
+			GUICtrlSetData($V2M_GUI_DebugOutputEdit, @CRLF & $V2M_EventLog, 1)
+		ElseIf $JDs_debug_only = '1' Or $JDs_debug_only = 'debug' Then
+			;send to Tab3Debug event log
+			GUICtrlSetData($V2M_GUI_DebugOutputEdit, @CRLF & $V2M_EventLog, 1)
+		ElseIf $JDs_debug_only = 'dll' Then
+			;do nothing
+		EndIf
+		; view the following output from sysinternals debuger "DebugView" or similar
+		DllCall("kernel32.dll", "none", "OutputDebugString", "str", "V2M - " & $V2M_EventLog)
+		$V2M_EventDisplay = $V2M_EventLog
+;		Sleep(100)
+	EndIf
+	Return $V2M_EventDisplay
+EndFunc
+
+;===============================================================================
+;
 ; Description:		This is executed when Autoit exits
 ; Parameter(s):		none
 ; Requirement(s):	none
@@ -311,19 +391,25 @@ EndFunc   ;==>V2MGUICtrlSetData
 ;
 ;===============================================================================
 Func OnAutoItExit ( )
+	Local $timer
+	;exit ssh & vnc
+	V2MExitSSH()
+	V2MExitVNC()
+	$V2M_EventDisplay = V2M_EventLog(' ', $V2M_EventDisplay)
+	ProcessClose("aero_disable.exe") ; included here so that it closes before the temp folder it is located in gets deleted
 	If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "GUI_TIMER_SHOW", 1) = 1 Then
-		Local $timer
+;		Local $timer
 		$timer = V2M_Timer("Stop")
 		If $timer <> "0:0:0" Then
 			MsgBox(0,"Connection timer","Session Connected for: " & $timer, 60)
 		EndIf
 	EndIf
-	Dim $curVal
+	Local $curVal
 	_RefreshSystemTray(50)
-	If $V2M_VNC_PasswordRegAdded = 1 Then
-		MsgBox(0, "Debug:", "I added Password, so Deleting it NOW", 2)
-		RegDelete("HKEY_CURRENT_USER\Software\ORL\WinVNC3", "Password")
-	EndIf
+;	If $V2M_VNC_PasswordRegAdded = 1 Then
+;		MsgBox(0, "Debug:", "I added Password, so Deleting it NOW", 2)
+;		RegDelete("HKEY_CURRENT_USER\Software\ORL\WinVNC3", "Password")
+;	EndIf
 ;	If $Debug = 1 Then MsgBox(0,"Debug - OnAutoItExit()","Program has finished " & @EXITMETHOD)
 	If @OSVersion = "WIN_VISTA" Then
 		ProcessClose("aero_disable.exe") ; included here a second time, just in case AutoIt is forcibly closed
@@ -340,40 +426,198 @@ Func OnAutoItExit ( )
 		EndIf
 		RegDelete("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_VNC")
 	EndIf
-	ProcessClose('v2mplink.exe')
-	ProcessClose('v2mvwr.exe')
-	ProcessClose('v2msc.exe')
-	Opt('WinTitleMatchMode', 4)
-	ControlSend('classname=Progman', '', 'SysListView321', '{F5}')
+;	ProcessClose('v2mplink.exe')
+;	ProcessClose('v2mvwr.exe')
+;	ProcessClose('v2msc.exe')
+;	Opt('WinTitleMatchMode', 4)
+;	ControlSend('classname=Progman', '', 'SysListView321', '{F5}')
+	;turn the wallpaper back on ...
+	DllCall("user32.dll", "int", "SystemParametersInfo", "int", 20, "int", 0, "str", RegRead("HKEY_CURRENT_USER\Control Panel\Desktop", "Wallpaper"), "int", 3)
+;	If @Compiled Then _SelfDelete(5)
+	Exit
 EndFunc
 
 ;===============================================================================
 ;
-; Description:		Sends Debug output to kernel32.dll (can be viewed using Dbgview.exe by sysinternals), and Sends to StatusBar's if requested
-; Parameter(s):		$msg				= Debug / log message
-;					$Local_DebugOnly	= 1 only sends to kernel32.dll, 0 sends to StatusBar's as well
-; Requirement(s):	$V2M_GUI_MainStatusBar, $V2M_GUI_MiniStatusBar
-; Return Value(s):	none
+; Description:		Session Timer Handling Function
+; Parameter(s):		$TimerAction	=	Start	=	Start or INIT the timer functions
+;														Loading Global $V2M_Timer[3] with hours:mins:sec of call
+;										Stop	=	Stop the timer function
+;														Loading Global $V2M_Timer[4] with hours:mins:sec of call
+;										Read	=	Reads the Session Times and returns
+; Requirement(s):	
+; Return Value(s):	$V2M_EventDisplay
 ; Author(s):		Jim Dolby
 ; Note(s):			
 ;
 ;===============================================================================
-Func JDs_debug($msg, $Local_DebugOnly = 1)
-	If $Local_DebugOnly = 1 Then
-		DllCall("kernel32.dll", "none", "OutputDebugString", "str", "V2M - " & $msg)
-	Else
-		DllCall("kernel32.dll", "none", "OutputDebugString", "str", "V2M - " & $msg)
-		;send to minigui event log display
-		GUICtrlSetData($V2M_GUI_MiniStatusBar, @CRLF & $msg, 1)
-		;send to maingui event log display
-		GUICtrlSetData($V2M_GUI_MainStatusBar, @CRLF & $msg, 1)
+
+Func V2M_Timer($TimerAction = 'Start')
+	Local $iSec, $iMin, $iHour, $ReadTicks, $V2M_TotalTicks
+	If $TimerAction = "Start" Then
+		if $V2M_Timer[2] = 0 then
+			$V2M_Timer[5] = TimerInit()
+			$V2M_Timer[3] = @HOUR & ":" & @MIN & ":" & @SEC
+			$V2M_Timer[2] = 1
+			Return $V2M_Timer[3]
+		EndIf
+	ElseIf $TimerAction = "Stop" And $V2M_Timer[2] = 0 Then
+		Return 0
+	ElseIf $TimerAction = "Stop" And $V2M_Timer[2] = 1 Then
+		$V2M_TotalTicks = TimerDiff($V2M_Timer[5])
+		_TicksToTime(Int($V2M_TotalTicks), $iHour, $iMin, $iSec)
+		$V2M_Timer[1] = StringFormat("%02i:%02i:%02i", $iHour, $iMin, $iSec)
+		$V2M_Timer[4] = @HOUR & ":" & @MIN & ":" & @SEC
+		Return $V2M_Timer[1]
+	ElseIf $TimerAction = "Read" Then
+		_TicksToTime(Int(TimerDiff($V2M_Timer[5])), $iHour, $iMin, $iSec)
+		$ReadTicks = StringFormat("%02i:%02i:%02i", $iHour, $iMin, $iSec)
+		Return $ReadTicks
 	EndIf
-EndFunc   ;==>JDs_debug
+EndFunc
+
+;
+;=========================================================================================================================================================
+;
+
+;
+;=========================================================================================================================================================
+;
+
+;
+;=========================================================================================================================================================
+;
+Func V2MPortRefused()
+	$V2M_MsgBox = MsgBox(270373, "Error", "VNC Connection Not Established," & @CRLF & "Should I Retry same port ?", 60)
+	If $V2M_MsgBox = 2 Then ;cancel pressed
+		V2MExitSSH()
+		V2MExitVNC()
+		$V2M_Status[3][1] = 0 ;sshwanted
+		$V2M_EventDisplay = V2M_EventLog(V2MGuiChangeState($V2M_GUI_Mini, $V2M_GUI_MiniTitle, 'hide'), $V2M_EventDisplay, 1)
+		$V2M_Status[2][2] = 'hide'
+		$V2M_EventDisplay = V2M_EventLog(V2MGuiChangeState($V2M_GUI_Main, $V2M_GUI_MainTitle, 'show'), $V2M_EventDisplay, 1)
+		$V2M_Status[2][1] = 'show'
+	Else ;retry pressed or timeout
+		V2MExitSSH()
+		V2MExitVNC()
+		$V2M_ProcessIDs[1] = V2MSSHConnect()
+	EndIf
+EndFunc
+;
+;=========================================================================================================================================================
+;
+
+Func _TicksToTime($iTicks, ByRef $iHours, ByRef $iMins, ByRef $iSecs)
+	If Number($iTicks) > 0 Then
+		$iTicks = Round($iTicks / 1000)
+		$iHours = Int($iTicks / 3600)
+		$iTicks = Mod($iTicks, 3600)
+		$iMins = Int($iTicks / 60)
+		$iSecs = Round(Mod($iTicks, 60))
+		; If $iHours = 0 then $iHours = 24
+		Return 1
+	ElseIf Number($iTicks) = 0 Then
+		$iHours = 0
+		$iTicks = 0
+		$iMins = 0
+		$iSecs = 0
+		Return 1
+	Else
+		SetError(1)
+		Return 0
+	EndIf
+EndFunc   ;==>_TicksToTime
+
+
+;=========================================================================================================================================================
+
+Func _SelfDelete($iDelay = 4)
+	If @Compiled Then
+		Local $sCmdFile
+		FileDelete(@TempDir & "\scratch.bat")
+		$sCmdFile = 'ping -n ' & $iDelay & '127.0.0.1 > nul' & @CRLF _
+				& ':loop' & @CRLF _
+				& 'del "' & @ScriptFullPath & '"' & @CRLF _
+				& 'if exist "' & @ScriptFullPath & '" goto loop' & @CRLF _
+				& 'del ' & @TempDir & '\scratch.bat'
+		FileWrite(@TempDir & "\scratch.bat", $sCmdFile)
+		Run(@TempDir & "\scratch.bat", @TempDir, @SW_HIDE)
+	EndIf
+EndFunc
+
+;=========================================================================================================================================================
+
+;MsgBox(0, "Your OS Language:", _Language())
+Func _Language()
+Select
+	Case StringInStr("0413,0813", @OSLang)
+		Return "Dutch"
+	Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009,2409,2809,2c09,3009,3409", @OSLang)
+		Return "English"
+	Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
+		Return "French"
+	Case StringInStr("0407,0807,0c07,1007,1407", @OSLang)
+		Return "German"
+	Case StringInStr("0410,0810", @OSLang)
+		Return "Italian"
+	Case StringInStr("0414,0814", @OSLang)
+		Return "Norwegian"
+	Case StringInStr("0415", @OSLang)
+		Return "Polish"
+	Case StringInStr("0416,0816", @OSLang)
+		Return "Portuguese"
+	Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
+        Return "Spanish"
+	Case StringInStr("041d,081d", @OSLang)
+		Return "Swedish"
+	Case Else
+		Return ""
+EndSelect
+EndFunc
 
 ;=========================================================================================================================================================
 ;=========================================================================================================================================================
 ;=========================================================================================================================================================
 
+;Func CheckPort($CheckPortIP, $CheckPortPort)
+;	Local $socket
+;	
+;	TCPStartUp()
+;	$socket = TCPConnect( $CheckPortIP, $CheckPortPort )
+;	Return $socket
+;	TCPShutdown ()
+;
+;EndFunc
+
+;=========================================================================================================================================================
+
+;Func CheckPortLoop($count1, $CheckPortLoopIP, $CheckPortLoopPort)
+;	Local $loop, $Exit
+;	$loop = 1
+;	TCPStartup()
+;	While $loop < $count1
+;		$Exit = TCPConnect($CheckPortLoopIP, $CheckPortLoopPort)
+;;		$Exit = CheckPort($CheckPortLoopIP, $CheckPortLoopPort)
+;		If $Exit = -1 Then
+;			$loop = $loop + 1
+;			Sleep (1000)
+;		Else
+;			$loop = $count1
+;		EndIf
+;		MsgBox(64, "CheckPort()", "checkport results: " & $Exit & @CRLF & "$loop: " & $loop)
+;	WEnd
+;	TCPShutdown()
+;EndFunc
+
+;=========================================================================================================================================================
+
+;Func CloseFunc($prog)
+;	Local $PID
+;	
+;	$PID = ProcessExists($prog)
+;	If $PID Then ProcessClose($PID)
+;
+;EndFunc
 
 ;===============================================================================
 ;
@@ -396,7 +640,7 @@ EndFunc   ;==>JDs_debug
 ;Func LoadSettings($sIni = "vnc2me_sc.ini")
 ;	$sIni = @ScriptDir & "\vnc2me_sc.ini"
 ;	$V2M_INI_GUIName = IniRead($sIni, "V2MGUI", "GUIName", "V2M")
-;	$V2MHost = IniRead($sIni, "$V2MServer", "Host", "aus.st")
+;	$V2MHost = IniRead($sIni, "$V2MServer", "Host", "nowhere.nohost")
 ;	$V2M = IniRead($sIni, "MAP", "User", "User")
 ;EndFunc   ;==>LoadSettings
 
@@ -415,43 +659,3 @@ EndFunc   ;==>JDs_debug
 ;EndFunc   ;==>SettingsToGUI
 
 ;=========================================================================================================================================================
-
-Func CheckPort($CheckPortIP, $CheckPortPort)
-	Dim $socket
-	
-	TCPStartUp()
-	$socket = TCPConnect( $CheckPortIP, $CheckPortPort )
-	Return $socket
-	TCPShutdown ()
-
-EndFunc
-
-;=========================================================================================================================================================
-
-Func CheckPortLoop($count1, $CheckPortLoopIP, $CheckPortLoopPort)
-	Dim $loop, $Exit
-	$loop = 1
-	While $loop < $count1
-		$Exit = CheckPort($CheckPortLoopIP, $CheckPortLoopPort)
-		If $Exit = -1 Then
-			$loop = $loop + 1
-			Sleep (1000)
-		Else
-			$loop = $count1
-		EndIf
-		MsgBox(64, "CheckPort()", "checkport results: " & $Exit & @CRLF & "$loop: " & $loop)
-	WEnd
-EndFunc
-
-;=========================================================================================================================================================
-
-Func CloseFunc($prog)
-	Dim $PID
-	
-	$PID = ProcessExists($prog)
-	If $PID Then ProcessClose($PID)
-
-EndFunc
-
-;=========================================================================================================================================================
-
