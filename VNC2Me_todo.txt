@@ -1,0 +1,16 @@
+Todo:
+- Use STDIN, STDOUT & STDERR to interact with v2msvr.exe
+- Use STDIN, STDOUT & STDERR to interact with v2mvwr.exe
+- Setup a chat client
+- Create Linux client (using x11vnc? and tightvnc)
+- Create MAC Client (not sure of suitable mac VNC Versions)
+- Create installer package to install on windows and others when made (for re-use and 
+- Use OpenSSL dll for tunnelling instead of ssh
+
+Done:
+- Use STDIN, STDOUT & STDERR to interact with v2mplink.exe
+
+
+Can't do:
+- 
+
