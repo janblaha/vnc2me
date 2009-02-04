@@ -19,7 +19,7 @@ Func V2MAddHostKey()
 	;Add Host key to knownhosts
 	$V2M_EventDisplay=V2M_EventLog('STDERR found', $V2M_EventDisplay, 1)
 ;	JDs_debug("STDERR found")
-	$msgbox = MsgBox(4, "The host is not cached", "This Host is not known, do you want to add it to known hosts ???")
+	$msgbox = MsgBox(4, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_HOST_TITLE", "HOST NOT CACHED"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_HOST_TEXT", "THIS HOST IS NOT KNOWN, DO YOU WANT TO ADD IT TO KNOWN HOSTS ???"))
 	If $msgbox = 6 Then
 		StdinWrite($V2M_ProcessIDs[1], "y " & @CR)
 	ElseIf $msgbox = 7 Then
@@ -39,9 +39,9 @@ EndFunc   ;==>V2MAddHostKey
 ;===============================================================================
 Func V2MExitVNC()
 	$V2M_EventDisplay=V2M_EventLog('VNC - Waiting to close cleanly', $V2M_EventDisplay, 0)
-	ProcessWaitClose($V2M_VNC_SC, 5)
-	ProcessWaitClose($V2M_VNC_VWR, 5)
-	ProcessWaitClose($V2M_VNC_SVR, 5)
+	ProcessWaitClose($V2M_VNC_SC, 3)
+	ProcessWaitClose($V2M_VNC_VWR, 3)
+	ProcessWaitClose($V2M_VNC_SVR, 3)
 	If ProcessExists($V2M_VNC_VWR) Or ProcessExists($V2M_VNC_SC) Or ProcessExists($V2M_VNC_SVR) Then
 		$V2M_EventDisplay=V2M_EventLog('VNC - Closed Forcibly', $V2M_EventDisplay, 0)
 		ProcessClose($V2M_VNC_SC)
@@ -63,7 +63,7 @@ EndFunc   ;==>V2MExit
 ;
 ;===============================================================================
 Func V2MExitSSH()
-	StdinWrite($V2M_ProcessIDs[1], " exit" & @CR)
+	StdinWrite($V2M_ProcessIDs[1], "exit " & @CR)
 	$V2M_EventDisplay=V2M_EventLog('SSH - Waiting to close cleanly', $V2M_EventDisplay, 0)
 	ProcessWaitClose("v2mplink.exe", 3)
 	If ProcessExists("v2mplink.exe") Then
@@ -85,7 +85,12 @@ EndFunc   ;==>V2MExit
 ;
 ;===============================================================================
 Func V2MRandomPort()
-	Return Random($V2MPortMin, $V2MPortMax, 1)
+	Local $RandomNumber
+	$RandomNumber = Random($V2MPortMin, $V2MPortMax, 1)
+	If Mod($RandomNumber, 2) > 0 Then
+		$RandomNumber = $RandomNumber + 1
+	EndIf
+	Return $RandomNumber
 EndFunc   ;==>V2MRandomPort
 
 ;===============================================================================
@@ -99,7 +104,7 @@ EndFunc   ;==>V2MRandomPort
 ;
 ;===============================================================================
 Func V2MAboutBox ()
-	MsgBox(0, "About", $V2M_GUI_MainTitle & @CRLF & @CRLF & "© 2008 Sec IT.")
+	MsgBox(0, "About", $V2M_GUI_MainTitle & @CRLF & "Creates a secure Tunnel (via SSH)," & @CRLF & "and starts VNC through this tunnel (thereby securing it)" & @CRLF & "visit: www.vnc2me.org for further details" & @CRLF & @CRLF & "© 2008 Sec IT.")
 EndFunc
 
 ;===============================================================================
@@ -164,19 +169,21 @@ EndFunc   ;==>V2MInBoxSTDINWrite
 ;===============================================================================
 ;Func V2MSSHConnect($V2M_SessionCode = '', $RunWhat = 'v2mplink', $StandardHost = '', $RunWhere = @ScriptDir)
 Func V2MSSHConnect()
-	Local $Local_ConnectString
-	$V2M_EventDisplay = V2M_EventLog("SSH - Starting at " & @HOUR & ":" & @MIN & ":" & @SEC & ", for "&$V2M_Status[1][1]&" Connections, (Session Code = " & $V2M_SessionCode & ")", $V2M_EventDisplay, 'Full')
+	Local $Local_ConnectString, $local_return
 	ProcessClose('v2mplink.exe')
 
 	If $V2M_SessionCode = '' Then
-		MsgBox(0, "Error", "Please enter the Session Code and try again", 60)
+		MsgBox(0, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSN_TITLE", "BLANK SESSION CODE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSN_TEXT", "PLEASE ENTER THE SESSION CODE AND TRY AGAIN"), 20)
 		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code was blank", $V2M_EventDisplay, 'dll')
 		$V2M_Status[3][1] = 0 ; SSH notwanted
 	Else
+		$V2M_EventDisplay = V2M_EventLog("SSH - Starting at " & @HOUR & ":" & @MIN & ":" & @SEC & ", for "&$V2M_Status[1][1]&" Connections, (Session Code = " & $V2M_SessionCode & ")", $V2M_EventDisplay, 'Full')
 		If $V2M_SSH[1] = "" Then
-			$V2M_SSH[1] = InputBox("Host Server", "What server do i connect to ?")
+			$V2M_EventDisplay = V2M_EventLog("SSH - No Hostname set", $V2M_EventDisplay, 'Full')
+			$V2M_SSH[1] = InputBox(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHSVR_TITLE", "HOST SERVER"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHSVR_TEXT", "CONNECT TO WHICH SSH SERVER ?"))
 			If @error = 1 Then
 				$V2M_Status[3][1] = 0		;sshwanted = 0
+				$V2M_Status[1][1] = ''
 			ElseIf $V2M_SSH[1] = "" Then
 				$V2M_Status[3][1] = 0		;sshwanted = 0
 			EndIf
@@ -187,7 +194,7 @@ Func V2MSSHConnect()
 				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_TITLE", "VWR_STARTSC_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE2", ""), 30)
 				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH[1] & ' -v -N'
 				$V2M_Status[3][8] = 1
-			ElseIf IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VWR_VWR_SVR_ONLY", 0) = 1 Then
+			ElseIf IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SVR_ONLY", 0) = 1 Then
 				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_TITLE", "VWR_STARTSVR_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE2", ""), 30)
 				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25900:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
 				$V2M_Status[3][9] = 1
@@ -201,8 +208,8 @@ Func V2MSSHConnect()
 					$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25900:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
 					$V2M_Status[3][9] = 1
 				Else
-					MsgBox(1, "VWR for SC", "No Viewer connection type chosen"&@CRLF&"SC type will be selected" , 10)
-					If @error=-1 Or @error=1 Then 
+					$local_return = MsgBox(1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_VWR_TITLE", "VIEWER"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_VWR_TEXT", "NO VIEWER CONNECTION TYPE CHOSEN"&@CRLF&"DEFAULTED TO SC"), 10)
+					If $local_return=-1 Or $local_return=1 Then 
 						GUICtrlSetState($V2M_GUI[40], 1)		;Check the SC vwr radio item.
 						$V2M_Status[3][8] = 1 ;vwrSCwanted
 					Else
@@ -224,10 +231,20 @@ Func V2MSSHConnect()
 		Else
 			$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 -L 25400:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
 		EndIf
-		$V2M_ProcessIDs[1] = Run($Local_ConnectString, @ScriptDir, @SW_MINIMIZE, 7)
-		$V2M_EventDisplay=V2M_EventLog("RUN - Starting SSH at " & @HOUR & ":" & @MIN & ":" & @SEC & " (remote port " & $V2M_SessionCode & ")" & @CRLF, $V2M_EventDisplay, 'dll')
-		Return $V2M_ProcessIDs[1]
-		$V2M_Status[3][2] = 1 ;ssh started
+		If $V2M_Status[3][1] = 0 Then
+			$V2M_EventDisplay=V2M_EventLog("RUN - NOT Starting SSH at " & @HOUR & ":" & @MIN & ":" & @SEC & " <due to error in V2MSSHConnect()>", $V2M_EventDisplay, 'dll')
+			$V2M_Status[3][2] = 0 ;ssh started
+			$V2M_Status[3][4] = 0 
+			$V2M_Status[3][6] = 0 
+			$V2M_Status[3][8] = 0 
+			$V2M_Status[3][9] = 0
+
+		Else
+			$V2M_ProcessIDs[1] = Run($Local_ConnectString, @ScriptDir, @SW_HIDE, 7)
+			$V2M_EventDisplay=V2M_EventLog("RUN - Starting SSH at " & @HOUR & ":" & @MIN & ":" & @SEC & " (remote port " & $V2M_SessionCode & ")", $V2M_EventDisplay, 'dll')
+			Return $V2M_ProcessIDs[1]
+			$V2M_Status[3][2] = 1 ;ssh started
+		EndIf
 	EndIf
 EndFunc   ;==>V2MSSHConnect
 ;===============================================================================
@@ -268,7 +285,8 @@ Func V2M_CheckRunning()
 			$V2M_Status[3][5] = 0
 			$V2M_Status[3][7] = 0
 			$V2M_Status[3][10] = 0
-			$V2M_EventDisplay = V2M_EventLog("v2mplink.exe has Closed, Full reconnect", $V2M_EventDisplay, 'dll')
+			V2M_Timer("Stop")
+			$V2M_EventDisplay = V2M_EventLog("v2mplink.exe has Closed after: "& (V2M_Timer("Stop")), $V2M_EventDisplay, 'dll')
 		EndIf
 	EndIf
 EndFunc   ;==>V2M_CheckRunning
@@ -299,7 +317,7 @@ Func V2M_startvnc($how='ssh')
 			If Not $V2M_Status[3][7] Then
 				$V2M_EventDisplay = V2M_EventLog("VNC - Starting SVR via SSH", $V2M_EventDisplay, 'debug')
 ;				If ProcessExists($V2M_VNC_SVR) Then ProcessClose($V2M_VNC_SVR)
-				$V2M_ProcessIDs[4] = Run($V2M_VNC_SVR & " AcceptCutText=0 AcceptPointerEvents=0 AcceptKeyEvents=0 AlwaysShared=1 LocalHost=1 SecurityTypes=None PortNumber=25900", @ScriptDir, @SW_HIDE, 7) ;run svr
+				$V2M_ProcessIDs[4] = Run(@ScriptDir&"\"&$V2M_VNC_SVR & " AcceptCutText=0 AcceptPointerEvents=0 AcceptKeyEvents=0 AlwaysShared=1 LocalHost=1 SecurityTypes=None PortNumber=25900", @ScriptDir, @SW_MINIMIZE, 7) ;run svr
 				$V2M_Status[3][7] = 1 ;	flag As started
 				Sleep(2000)
 				Return("SVRviaSSH")
@@ -307,7 +325,7 @@ Func V2M_startvnc($how='ssh')
 		ElseIf $V2M_Status[3][8] Then ;vwrscwanted
 			If $V2M_Status[3][10] <> 1 Then
 				$V2M_EventDisplay = V2M_EventLog("VNC - Starting VWR for SC via SSH", $V2M_EventDisplay, 'debug')
-				$V2M_ProcessIDs[2] = Run($V2M_VNC_VWR & " -listen 15500 -8greycolours -autoscaling", @ScriptDir, @SW_MINIMIZE, 7) ;run vwr For sc connection
+				$V2M_ProcessIDs[2] = Run($V2M_VNC_VWR & " -listen 15500 -8greycolours -autoscaling", @ScriptDir, @SW_HIDE, 7) ;run vwr For sc connection
 ;				MsgBox(0, 'Debug', '@error = '&@error&@CRLF&'$V2M_ProcessIDs[2] = '&$V2M_ProcessIDs[2],3)
 ;				If ProcessExists($V2M_VNC_VWR) Then ProcessClose($V2M_VNC_VWR)
 				$V2M_Status[3][10] = 1 ;	flag As started
@@ -316,7 +334,7 @@ Func V2M_startvnc($how='ssh')
 		ElseIf $V2M_Status[3][9] Then ;vwrsvrwanted
 			If $V2M_Status[3][10] <> 1 Then
 				$V2M_EventDisplay = V2M_EventLog("VNC - Starting VWR for SVR via SSH", $V2M_EventDisplay, 'debug')
-				$V2M_ProcessIDs[2] = Run($V2M_VNC_VWR & " localhost::25900 /8greycolors/autoreconnect 1 /shared /belldeiconify /autoscaling", @ScriptDir, @SW_MINIMIZE, 7) ;run vwr For svr connection
+				$V2M_ProcessIDs[2] = Run($V2M_VNC_VWR & " localhost::25900 /8greycolors/autoreconnect 1 /shared /belldeiconify /autoscaling", @ScriptDir, @SW_HIDE, 7) ;run vwr For svr connection
 ;				MsgBox(0, 'Debug', '@error = '&@error&@CRLF&'$V2M_ProcessIDs[2] = '&$V2M_ProcessIDs[2],3)
 ;				If ProcessExists($V2M_VNC_VWR) Then ProcessClose($V2M_VNC_VWR)
 				$V2M_Status[3][10] = 1 ;	flag As started
@@ -361,19 +379,21 @@ Func V2M_EventLog($V2M_EventLog='', $V2M_EventDisplay='', $JDs_debug_only='dll')
 		If $JDs_debug_only = '0' Or $JDs_debug_only = 'full' Then
 ;		MsgBox(0, "Debug", $JDs_debug_only, 2)
 			;send to minigui event log
-			GUICtrlSetData($V2M_GUI[8], @CRLF & $V2M_EventLog, 1)
-			;send to maingui event log
-			GUICtrlSetData($V2M_GUI[9], @CRLF & $V2M_EventLog, 1)
+;			GUICtrlSetData($V2M_GUI[8], $V2M_EventLog, 1)
+			_GUICtrlStatusBar_SetText($V2M_GUI[42], $V2M_EventLog)			;send to minigui event log
+			_GUICtrlStatusBar_SetText ($V2M_GUI[43], $V2M_EventLog)			;send to maingui event log
+;			GUICtrlSetData($V2M_GUI[9], $V2M_EventLog & @CRLF, 1)
 			;send to Tab3Debug event log
-			GUICtrlSetData($V2M_GUI_DebugOutputEdit, @CRLF & $V2M_EventLog, 1)
+			GUICtrlSetData($V2M_GUI_DebugOutputEdit, $V2M_EventLog & @CRLF, 1)
+			ConsoleWrite($V2M_EventLog & @CRLF)
 		ElseIf $JDs_debug_only = '1' Or $JDs_debug_only = 'debug' Then
 			;send to Tab3Debug event log
-			GUICtrlSetData($V2M_GUI_DebugOutputEdit, @CRLF & $V2M_EventLog, 1)
+			If $V2M_Status[1][2] = 1 Then GUICtrlSetData($V2M_GUI_DebugOutputEdit, $V2M_EventLog & @CRLF, 1)
 		ElseIf $JDs_debug_only = 'dll' Then
 			;do nothing
 		EndIf
 		; view the following output from sysinternals debuger "DebugView" or similar
-		DllCall("kernel32.dll", "none", "OutputDebugString", "str", "V2M - " & $V2M_EventLog)
+		If $V2M_Status[1][2] = 1 Then DllCall("kernel32.dll", "none", "OutputDebugString", "str", "V2M - " & $V2M_EventLog)
 		$V2M_EventDisplay = $V2M_EventLog
 ;		Sleep(100)
 	EndIf
@@ -392,16 +412,16 @@ EndFunc
 ;===============================================================================
 Func OnAutoItExit ( )
 	Local $timer
+	TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_TITLE", "APP_EXITING_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE2", ""), 30)
 	;exit ssh & vnc
 	V2MExitSSH()
 	V2MExitVNC()
-	$V2M_EventDisplay = V2M_EventLog(' ', $V2M_EventDisplay)
 	ProcessClose("aero_disable.exe") ; included here so that it closes before the temp folder it is located in gets deleted
 	If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "GUI_TIMER_SHOW", 1) = 1 Then
 ;		Local $timer
 		$timer = V2M_Timer("Stop")
 		If $timer <> "0:0:0" Then
-			MsgBox(0,"Connection timer","Session Connected for: " & $timer, 60)
+			MsgBox(0,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_TIMER_TITLE", "CONNECTION TIMER"),IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_TIMER_TEXT", "SESSION CONNECTED FOR: ") & " " & $timer, 60)
 		EndIf
 	EndIf
 	Local $curVal
@@ -433,7 +453,15 @@ Func OnAutoItExit ( )
 ;	ControlSend('classname=Progman', '', 'SysListView321', '{F5}')
 	;turn the wallpaper back on ...
 	DllCall("user32.dll", "int", "SystemParametersInfo", "int", 20, "int", 0, "str", RegRead("HKEY_CURRENT_USER\Control Panel\Desktop", "Wallpaper"), "int", 3)
-;	If @Compiled Then _SelfDelete(5)
+	If StringInStr(@ScriptFullPath, "Temp\7z") Then
+		V2M_EventLog("RUN - : Path is in temp directory, all files will now be deleted", $V2M_EventDisplay, 'dll')
+;		MsgBox(0, "Debug", "Path is in temp directory, all files will now be deleted", 1)
+		If @Compiled Then _SelfDelete(5)
+	Else
+		V2M_EventLog("EXIT - Path is NOT in temp directory, VNC2Me must be installed, not deleting files", $V2M_EventDisplay, 'dll')
+;		MsgBox(0, "Debug", "Path is NOT in temp directory" & @CRLF & @CRLF & "@ScriptDir = " & @ScriptDir & @CRLF & "@TempDir =   " & @TempDir & @CRLF & "@ProgramFilesDir =   " & @ProgramFilesDir & @CRLF & "@ProgramsDir =   " & @ProgramsDir)
+	EndIf
+	$V2M_EventDisplay = V2M_EventLog(' ', $V2M_EventDisplay, 'full')
 	Exit
 EndFunc
 
@@ -488,7 +516,7 @@ EndFunc
 ;=========================================================================================================================================================
 ;
 Func V2MPortRefused()
-	$V2M_MsgBox = MsgBox(270373, "Error", "VNC Connection Not Established," & @CRLF & "Should I Retry same port ?", 60)
+	$V2M_MsgBox = MsgBox(270373, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_PORTC_TITLE", "ERROR - SESSION REFUSED"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_PORTC_TEXT", "SSH SESSION TUNNEL REFUSED, RETRY SAME SETTINGS ???"), 60)
 	If $V2M_MsgBox = 2 Then ;cancel pressed
 		V2MExitSSH()
 		V2MExitVNC()
@@ -549,30 +577,24 @@ EndFunc
 
 ;MsgBox(0, "Your OS Language:", _Language())
 Func _Language()
-Select
-	Case StringInStr("0413,0813", @OSLang)
-		Return "Dutch"
-	Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009,2409,2809,2c09,3009,3409", @OSLang)
+	Local $return = '', $iniCount, $loopcount = 0
+	$iniCount = IniRead(@ScriptDir & "\vnc2me_sc.ini", "LANGUAGES", "LANG_COUNT", 1)
+	While $loopcount < $iniCount
+		V2M_EventLog('Language loopcount = ' & $loopcount & " & " & @OSLang & " <> LANG_IDENT_"&$loopcount, $V2M_EventDisplay, 'dll')
+		If StringInStr(IniRead(@ScriptDir & "\vnc2me_sc.ini", "LANGUAGES", "LANG_IDENT_"&$loopcount,""), @OSLang) Then
+			$return = IniRead(@ScriptDir & "\vnc2me_sc.ini", "LANGUAGES", "LANG_NAME_"&$loopcount,"English")
+			$loopcount = $iniCount + 1
+		EndIf
+		$loopcount = $loopcount + 1 ; increment loopcount
+	WEnd
+	If $return = '' Then
+		$V2M_EventDisplay = V2M_EventLog("Language - Current language not detected, defaulting to english <@OSLang = " & @OSLang & ">", $V2M_EventDisplay, 'dll')
 		Return "English"
-	Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
-		Return "French"
-	Case StringInStr("0407,0807,0c07,1007,1407", @OSLang)
-		Return "German"
-	Case StringInStr("0410,0810", @OSLang)
-		Return "Italian"
-	Case StringInStr("0414,0814", @OSLang)
-		Return "Norwegian"
-	Case StringInStr("0415", @OSLang)
-		Return "Polish"
-	Case StringInStr("0416,0816", @OSLang)
-		Return "Portuguese"
-	Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
-        Return "Spanish"
-	Case StringInStr("041d,081d", @OSLang)
-		Return "Swedish"
-	Case Else
-		Return ""
-EndSelect
+	Else
+		$V2M_EventDisplay = V2M_EventLog("Language - Auto detected language: " & $return & " <@OSLang = " & @OSLang & ">", $V2M_EventDisplay, 'dll')
+		Return $return
+	EndIf
+	V2M_EventLog('Language loopcount = ' & $loopcount & @CRLF & 'inicount = ' & $iniCount & @CRLF & '@OSLang = ' & @CRLF & @OSLang & " = LANG_IDENT_"&$loopcount, $V2M_EventDisplay, 'dll')
 EndFunc
 
 ;=========================================================================================================================================================

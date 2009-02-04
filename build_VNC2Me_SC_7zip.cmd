@@ -15,9 +15,9 @@ cls
 del temp\VNC2Me_7zip.7z
 
 build_resources\7za a temp\VNC2Me_7zip.7z compiled\*.*
-copy /b build_resources\7z_v2m.sfx + 7z_sfx_config.txt + temp\VNC2Me_7zip.7z temp\VNC2Me_7zip.exe
+copy /b build_resources\7z_v2m.sfx + build_resources\7z_sfx_config.txt + temp\VNC2Me_7zip.7z temp\VNC2Me_7zip.exe
 
-upx –9 -f -k temp\VNC2Me_7zip.exe
+build_resources\upx -9 -f -k -o VNC2Me_SC_7zip.exe temp\VNC2Me_7zip.exe
 
 copy temp\VNC2Me_7zip.exe .\ /y
 rem copy temp\VNC2Me_7zip.exe "%HOMEDRIVE%%HOMEPATH%\desktop" /y
