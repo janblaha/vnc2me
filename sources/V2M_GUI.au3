@@ -1,11 +1,11 @@
 #cs ----------------------------------------------------------------------------
-
- AutoIt Version: 3.2.10.0
- Author:         myName
-
- Script Function:
+	
+	AutoIt Version: 3.2.10.0
+	Author:         myName
+	
+	Script Function:
 	Template AutoIt script.
-
+	
 #ce ----------------------------------------------------------------------------
 
 ; Script Start - Add your code below here
@@ -29,11 +29,11 @@ $BaseLeft = 20
 $BaseTop = 35
 
 $V2M_GUI[17] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_BTN_EXIT", "EXIT"), $BaseLeft, $V2M_GUI[2] - 70, 60, 20)
-GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_BTN_EXIT_TIP", "EXIT THE APP"))
+GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_BTN_EXIT_TIP", "EXIT THE APP"))
 $CurLeft = $BaseLeft + 80
 If $V2M_Status[1][2] = 1 Then
 	$V2M_GUI[33] = GUICtrlCreateCheckbox(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_DbgBox", "DEBUG"), $CurLeft, $V2M_GUI[2] - 70)
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_DBGBOX_TIP", "DISPLAY DEBUG WINDOW"))
+	GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_DBGBOX_TIP", "DISPLAY DEBUG WINDOW"))
 Else
 	$V2M_GUI[33] = 1
 EndIf
@@ -43,8 +43,8 @@ $V2M_GUI[43] = _GUICtrlStatusBar_Create($V2M_GUI_Main, $bParts, "", $SBARS_TOOLT
 ; Set parts
 ;_GUICtrlStatusBar_SetParts ($V2M_GUI[43], $bParts)
 ;_GUICtrlStatusBar_SetText ($V2M_GUI[43], $V2M_Name & " " & $V2M_Version & " - " & StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC), 1)
-_GUICtrlStatusBar_SetText ($V2M_GUI[43], @TAB & StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC), 2)
-	; Set icon
+_GUICtrlStatusBar_SetText($V2M_GUI[43], @TAB & StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC), 2)
+; Set icon
 ;	_GUICtrlStatusBar_SetIcon ($V2M_GUI[43], 2, _WinAPI_LoadShell32Icon (111))
 ;_GUICtrlStatusBar_SetBkColor($V2M_GUI[43], 0xFFFFFF)
 ;_GUICtrlStatusBar_SetText ($V2M_GUI[43], @TAB & , 1)
@@ -64,26 +64,26 @@ If FileExists(@ScriptDir & "\V2Msc.exe") And (IniRead(@ScriptDir & "\vnc2me_sc.i
 
 	GUICtrlCreateLabel(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_SSN", "SESSION CODE"), $CurLeft, $CurTop + 3)
 	$V2M_GUI[19] = GUICtrlCreateInput("", $CurLeft + 80, $CurTop, 200)
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_SSN_TIP", "INPUT SESSION CODE TO CONNECT"))
+	GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_SSN_TIP", "INPUT SESSION CODE TO CONNECT"))
 	$CurTop = $CurTop + 30
 	$CurLeft = $CurLeft + 20
-	$V2M_GUI[20] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_BTN_START", "SHARE DESKTOP"), $CurLeft, $V2M_GUI[4] - 40, 120, 20, 0, $GUI_FOCUS)		; VNC SC spawn button
-	$CurLeft = $CurLeft + 140
-	$V2M_GUI[21] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_BTN_STOP", "STOP SHARING"), $CurLeft, $V2M_GUI[4] - 40, 100, 20)
+	$V2M_GUI[20] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_BTN_START", "SHARE DESKTOP"), $CurLeft, $V2M_GUI[4] - 40, 140, 20) ; VNC SC spawn button
+	$CurLeft = $CurLeft + 160
+	$V2M_GUI[21] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_BTN_STOP", "STOP SHARING"), $CurLeft, $V2M_GUI[4] - 40, 140, 20)
 	If (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", "") <> "") Then
 		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code found in INI, loading it into GUI", $V2M_EventDisplay, 'dll')
 		GUICtrlSetData($V2M_GUI[19] & @CRLF, IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", ""))
-		GUICtrlSetState($V2M_GUI[19], $GUI_DISABLE)		;disable the session code box after setting from INI
-;	Else
-;		GUICtrlSetData($V2M_GUI[19] & @CRLF, V2MRandomPort())
+		GUICtrlSetState($V2M_GUI[19], $GUI_DISABLE) ;disable the session code box after setting from INI
+		;	Else
+		;		GUICtrlSetData($V2M_GUI[19] & @CRLF, V2MRandomPort())
 	EndIf
-	$V2M_Status[3][11]=1
+	$V2M_Status[5][1] = 1
 Else
 	$V2M_GUI[18] = 1
 	$V2M_GUI[19] = 1
 	$V2M_GUI[20] = 1
 	$V2M_GUI[21] = 1
-	$V2M_Status[3][11]=0
+	$V2M_Status[5][1] = 0
 EndIf
 ;
 ; Tab Collaboration
@@ -98,34 +98,34 @@ If FileExists(@ScriptDir & "\V2MSVR.exe") And (IniRead(@ScriptDir & "\vnc2me_sc.
 	GUICtrlCreateLabel(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SVR_SSN", "SESSION CODE"), $CurLeft, $CurTop + 3)
 	$CurLeft = $CurLeft + 80
 	$V2M_GUI[35] = GUICtrlCreateInput("", $CurLeft, $CurTop, 200, '', BitOR(4096, 64))
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SVR_SSN_TIP", "INPUT SEESION CODE TO START"))
+	GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SVR_SSN_TIP", "INPUT SEESION CODE TO START"))
 	$CurLeft = $CurLeft + 220
 	$V2M_GUI[39] = GUICtrlCreateCheckbox(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RND", "RANDOM"), $CurLeft, $CurTop, $V2M_GUI[3] - $CurLeft)
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RND_TIP", "GENERATE RANDOM SESSION CODE"))
+	GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RND_TIP", "GENERATE RANDOM SESSION CODE"))
 	$CurTop = $CurTop + 30
 	$CurLeft = $BaseLeft + 30
-	$V2M_GUI[36] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SVR_BTN_START", "START COLLAB"), $CurLeft, $V2M_GUI[4] - 40, 120, 20)
-	$CurLeft = $CurLeft + 140
-	$V2M_GUI[37] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SVR_BTN_STOP", "STOP COLLAB"), $CurLeft, $V2M_GUI[4] - 40, 100, 20)
+	$V2M_GUI[36] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SVR_BTN_START", "START COLLAB"), $CurLeft, $V2M_GUI[4] - 40, 140, 20)
+	$CurLeft = $CurLeft + 160
+	$V2M_GUI[37] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SVR_BTN_STOP", "STOP COLLAB"), $CurLeft, $V2M_GUI[4] - 40, 140, 20)
 	If (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", "") <> "") Then
 		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code found in INI, loading it into GUI", $V2M_EventDisplay, 'dll')
 		GUICtrlSetData($V2M_GUI[35] & @CRLF, IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", ""))
-		GUICtrlSetState($V2M_GUI[35], $GUI_DISABLE)		;disable the session code box after setting from INI
-		GUICtrlSetState($V2M_GUI[39], $GUI_DISABLE)		;disable the random session code checkbox
+		GUICtrlSetState($V2M_GUI[35], $GUI_DISABLE) ;disable the session code box after setting from INI
+		GUICtrlSetState($V2M_GUI[39], $GUI_DISABLE) ;disable the random session code checkbox
 	Else
 		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code NOT found in INI, generating random code", $V2M_EventDisplay, 'dll')
 		GUICtrlSetData($V2M_GUI[35] & @CRLF, V2MRandomPort())
 		GUICtrlSetState($V2M_GUI[35], $GUI_DISABLE) ;Disable the session code box after Setting session code
-		GUICtrlSetState($V2M_GUI[39], 1)		;set SVR tab random checkbox
+		GUICtrlSetState($V2M_GUI[39], 1) ;set SVR tab random checkbox
 	EndIf
-	$V2M_Status[3][12]=1
+	$V2M_Status[5][2] = 1
 Else
 	$V2M_GUI[34] = 1
 	$V2M_GUI[35] = 1
 	$V2M_GUI[39] = 1
 	$V2M_GUI[36] = 1
 	$V2M_GUI[37] = 1
-	$V2M_Status[3][12]=0
+	$V2M_Status[5][2] = 0
 EndIf
 
 ;
@@ -140,52 +140,52 @@ If FileExists(@ScriptDir & "\V2Mvwr.exe") And (IniRead(@ScriptDir & "\vnc2me_sc.
 	$CurLeft = $CurLeft + 10
 	GUICtrlCreateLabel(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_SSN", "SESSION CODE"), $CurLeft, $CurTop + 3)
 	$CurLeft = $CurLeft + 80
-	$V2M_GUI[12] = GUICtrlCreateInput("", $CurLeft, $CurTop, 200, '', BitOR(4096, 64))		;session code
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_SSN_TIP", "INPUT SESSION CODE TO CONNECT"))
+	$V2M_GUI[12] = GUICtrlCreateInput("", $CurLeft, $CurTop, 200, '', BitOR(4096, 64)) ;session code
+	GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_SSN_TIP", "INPUT SESSION CODE TO CONNECT"))
 	$CurLeft = $CurLeft + 220
 	$V2M_GUI[38] = GUICtrlCreateCheckbox(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RND", "RANDOM"), $CurLeft, $CurTop, $V2M_GUI[3] - $CurLeft)
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RND_TIP", "GENERATE RANDOM SESSION CODE"))
+	GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RND_TIP", "GENERATE RANDOM SESSION CODE"))
 	$CurLeft = $BaseLeft + 30
 	$CurTop = $CurTop + 25
-	If (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SC_ONLY", 0) = 1) Then		;VWR_SC_WANTED
+	If (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SC_ONLY", 0) = 1) Then ;VWR_SC_WANTED
 		$V2M_EventDisplay = V2M_EventLog("VWR - SC VWR Only", $V2M_EventDisplay, 'dll')
 		$V2M_Status[3][8] = 1 ;vwrSCwanted
-	ElseIf (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SVR_ONLY", 0) = 1) Then		;VWR_SVR_WANTED
+	ElseIf (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SVR_ONLY", 0) = 1) Then ;VWR_SVR_WANTED
 		$V2M_EventDisplay = V2M_EventLog("VWR - SVR VWR Only", $V2M_EventDisplay, 'dll')
 		$V2M_Status[3][9] = 1 ;vwrSVRwanted
 	Else ;ASK user what to connect to ...
 		$V2M_EventDisplay = V2M_EventLog("VWR - Ask for connection type", $V2M_EventDisplay, 'dll')
 		GUIStartGroup()
-		$V2M_GUI[40] = GUICtrlCreateRadio (IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RADIO_SC", "CONNECT TO SC"), $CurLeft, $CurTop, 100, 20, $GUI_SS_DEFAULT_RADIO)
-		$CurLeft = ($V2M_GUI[3]/2)+10
-		$V2M_GUI[41] = GUICtrlCreateRadio (IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RADIO_SVR", "CONNECT TO SVR"), $CurLeft, $CurTop, 100, 20)
-		GUICtrlSetState($V2M_GUI[40], 1)		;Check the SC vwr radio item.
+		$V2M_GUI[40] = GUICtrlCreateRadio(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RADIO_SC", "CONNECT TO SC"), $CurLeft, $CurTop, 100, 20, $GUI_SS_DEFAULT_RADIO)
+		$CurLeft = ($V2M_GUI[3] / 2) + 10
+		$V2M_GUI[41] = GUICtrlCreateRadio(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_RADIO_SVR", "CONNECT TO SVR"), $CurLeft, $CurTop, 100, 20)
+		GUICtrlSetState($V2M_GUI[40], 1) ;Check the SC vwr radio item.
 		$V2M_Status[3][8] = 1 ;vwrSCwanted
 	EndIf
 	$CurTop = $CurTop + 10
 	$CurLeft = $BaseLeft + 30
-	$V2M_GUI[10] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_BTN_START", "START VIEWING"), $CurLeft, $V2M_GUI[4] - 40, 120, 20)
-	$CurLeft = $CurLeft + 140
-	$V2M_GUI[11] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_BTN_STOP", "STOP VIEWING"), $CurLeft, $V2M_GUI[4] - 40, 100, 20)
+	$V2M_GUI[10] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_BTN_START", "START VIEWING"), $CurLeft, $V2M_GUI[4] - 40, 140, 20)
+	$CurLeft = $CurLeft + 160
+	$V2M_GUI[11] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_VWR_BTN_STOP", "STOP VIEWING"), $CurLeft, $V2M_GUI[4] - 40, 140, 20)
 	If (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", "") <> "") Then
 		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code found in INI, loading it into GUI", $V2M_EventDisplay, 'dll')
 		GUICtrlSetData($V2M_GUI[12] & @CRLF, IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", ""))
-		GUICtrlSetState($V2M_GUI[12], $GUI_DISABLE)		;disable the session code box after setting from INI
-		GUICtrlSetState($V2M_GUI[38], $GUI_DISABLE)		;disable the random session code checkbox
+		GUICtrlSetState($V2M_GUI[12], $GUI_DISABLE) ;disable the session code box after setting from INI
+		GUICtrlSetState($V2M_GUI[38], $GUI_DISABLE) ;disable the random session code checkbox
 	Else
 		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code NOT found in INI, generating random code", $V2M_EventDisplay, 'dll')
 		GUICtrlSetData($V2M_GUI[12] & @CRLF, V2MRandomPort())
 		GUICtrlSetState($V2M_GUI[12], $GUI_DISABLE) ;Disable the session code box after Setting session code
-		GUICtrlSetState($V2M_GUI[38], 1)		;set VWR tab random checkbox
+		GUICtrlSetState($V2M_GUI[38], 1) ;set VWR tab random checkbox
 	EndIf
-	$V2M_Status[3][13]=1
+	$V2M_Status[5][3] = 1
 Else
 	$V2M_GUI[13] = 1
 	$V2M_GUI[12] = 1
 	$V2M_GUI[38] = 1
 	$V2M_GUI[10] = 1
 	$V2M_GUI[11] = 1
-	$V2M_Status[3][13]=0
+	$V2M_Status[5][3] = 0
 EndIf
 ;
 ; Tab UVNC sharing
@@ -195,44 +195,51 @@ If FileExists(@ScriptDir & "\uvnc.exe") And (IniRead(@ScriptDir & "\vnc2me_sc.in
 	$V2M_GUI[50] = GUICtrlCreateTabItem("  " & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_TAB_UVNC", "UVNC") & "  ")
 	$CurTop = $BaseTop
 	$CurLeft = $BaseLeft + 10
-	GUICtrlCreateLabel(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_ADD", "ADDRESS"), $CurLeft, $CurTop + 3)
-	$V2M_GUI[51] = GUICtrlCreateInput("", $CurLeft + 80, $CurTop, 200)
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_ADD_TIP", "INPUT SUPPORT ADDRESS TO CONNECT"))
-	$CurTop = $CurTop + 20
-	$CurLeft = $BaseLeft + 10
-	GUICtrlCreateLabel(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_PORT", "PORT"), $CurLeft, $CurTop + 3)
-	$V2M_GUI[52] = GUICtrlCreateInput("", $CurLeft + 80, $CurTop, 200)
-	GUICtrlSetTip(-1,IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_PORT_TIP", "INPUT SUPPORT PORT"))
+	If (IniRead(@ScriptDir & "\ultravnc.ini", "SC", "SCNUMBERCONNECTIONS", 0)) > 0 Then
+		V2M_EventLog("UVNC, SCNUMBERCONNECTIONS > 0", $V2M_EventDisplay, 'dll')
+		$V2M_GUI[55] = GUICtrlCreateCombo("Manual", $CurLeft, $CurTop, 180, 90)
+		GUICtrlSetData($V2M_GUI[55], V2M_UVNC_ConnectNames(), '')
+	Else
+		V2M_EventLog("UVNC, SCNUMBERCONNECTIONS = 0", $V2M_EventDisplay, 'dll')
+		GUICtrlCreateLabel(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_ADD", "ADDRESS"), $CurLeft, $CurTop + 3)
+		$V2M_GUI[51] = GUICtrlCreateInput("", $CurLeft + 80, $CurTop, 200)
+		GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_ADD_TIP", "INPUT SUPPORT ADDRESS TO CONNECT"))
+		$CurTop = $CurTop + 20
+		$CurLeft = $BaseLeft + 10
+		GUICtrlCreateLabel(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_PORT", "PORT"), $CurLeft, $CurTop + 3)
+		$V2M_GUI[52] = GUICtrlCreateInput("", $CurLeft + 80, $CurTop, 200)
+		GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_PORT_TIP", "INPUT SUPPORT PORT"))
+	EndIf
 	$CurTop = $CurTop + 10
 	$CurLeft = $CurLeft + 20
-	$V2M_GUI[53] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_BTN_START", "SHARE DESKTOP"), $CurLeft, $V2M_GUI[4] - 40, 120, 20, 0, $GUI_FOCUS)		; VNC SC spawn button
-	$CurLeft = $CurLeft + 140
-	$V2M_GUI[54] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_BTN_STOP", "STOP SHARING"), $CurLeft, $V2M_GUI[4] - 40, 100, 20)
+	$V2M_GUI[53] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_BTN_START", "SHARE DESKTOP"), $CurLeft, $V2M_GUI[4] - 40, 140, 20, 0, $GUI_FOCUS) ; VNC SC spawn button
+	$CurLeft = $CurLeft + 160
+	$V2M_GUI[54] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_UVNC_BTN_STOP", "STOP SHARING"), $CurLeft, $V2M_GUI[4] - 40, 140, 20)
 	If (IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", "") <> "") Then
 		GUICtrlSetData($V2M_GUI[53] & @CRLF, IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "SESSION_CODE", ""))
-;		GUICtrlSetState($V2M_GUI[53], $GUI_DISABLE)		;disable the session code box after setting from INI
-;	Else
-;		GUICtrlSetData($V2M_GUI[19] & @CRLF, V2MRandomPort())
+		;		GUICtrlSetState($V2M_GUI[53], $GUI_DISABLE)		;disable the session code box after setting from INI
+		;	Else
+		;		GUICtrlSetData($V2M_GUI[19] & @CRLF, V2MRandomPort())
 	EndIf
-	$V2M_Status[3][11]=1
+	$V2M_Status[5][4] = 1
 Else
 	$V2M_GUI[50] = 1
 	$V2M_GUI[51] = 1
 	$V2M_GUI[52] = 1
 	$V2M_GUI[53] = 1
 	$V2M_GUI[54] = 1
-	$V2M_Status[3][11]=0
+	$V2M_Status[5][4] = 0
 EndIf
 
 ; Show the GUI window
-If ($V2M_Status[3][11] + $V2M_Status[3][12] + $V2M_Status[3][13]) > 0 Then
+If ($V2M_Status[5][1] + $V2M_Status[5][2] + $V2M_Status[5][3] + $V2M_Status[5][4]) > 0 Then
 	$V2M_EventDisplay = V2M_EventLog("GUI - Showing the main window (more than one tab visable)", $V2M_EventDisplay, 'dll')
 	GUISetState(@SW_SHOW, $V2M_GUI_MainTitle)
 	TrayItemSetState($V2M_Tray[3], $TRAY_CHECKED)
 Else
 	$V2M_EventDisplay = V2M_EventLog("GUI - No Tabs visable in the main GUI, VNC2Me will now exit", $V2M_EventDisplay, 'dll')
 	TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_TITLE", "APP_EXITING_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE2", ""), 30)
-	MsgBox(0,"What ?", "No VNC files found, exiting", 10)
+	MsgBox(0, "What ?", "No VNC files found, exiting", 10)
 	$V2M_Exit = 1
 EndIf
 $V2M_Status[2][1] = 'show'
@@ -261,14 +268,14 @@ GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MIN
 ;$V2M_GUI[26] = GUICtrlCreateEdit("", $V2M_GUI[5] - 50, 20, 50, 21, BitOR(4096, 64, 2048))
 ;GUICtrlSetTip(-1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MINI_SESSION_TIP", "VNC2Me SESSION CODE"))
 Global $aParts[4] = [200, 75, 50, 50]
-Global 	$aText[3] = ["Left Justified", @TAB & "Centered", @TAB & @TAB & "Right"]
+Global $aText[3] = ["Left Justified", @TAB & "Centered", @TAB & @TAB & "Right"]
 $V2M_GUI[42] = _GUICtrlStatusBar_Create($V2M_GUI_Mini, $aParts, $aText)
 
 ; Set parts
 ;_GUICtrlStatusBar_SetParts ($V2M_GUI[42], $aParts)
-_GUICtrlStatusBar_SetText ($V2M_GUI[42], "Status")
-_GUICtrlStatusBar_SetText ($V2M_GUI[42], @TAB & StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC), 1)
-_GUICtrlStatusBar_SetText ($V2M_GUI[42], @TAB & StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC), 2)
+_GUICtrlStatusBar_SetText($V2M_GUI[42], "Status")
+_GUICtrlStatusBar_SetText($V2M_GUI[42], @TAB & StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC), 1)
+_GUICtrlStatusBar_SetText($V2M_GUI[42], @TAB & StringFormat("%02d:%02d:%02d", @HOUR, @MIN, @SEC), 2)
 _GUICtrlStatusBar_SetTipText($V2M_GUI[42], 1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_STATUS_TIP", "CURRENT STATUS"))
 
 ; Set icons
@@ -286,7 +293,7 @@ GUISetState(@SW_HIDE, $V2M_GUI_MiniTitle)
 ;
 ;=========================================================================================================================================================
 ; Create the debug GUI
-Global $V2M_GUI_DebugHeight = $V2M_GUI[2] -100
+Global $V2M_GUI_DebugHeight = $V2M_GUI[2] - 100
 
 $V2M_GUI[27] = GUICreate($V2M_GUI_DebugTitle, $V2M_GUI[1], $V2M_GUI_DebugHeight, ((@DesktopWidth - $V2M_GUI[1]) / 2) + $V2M_GUI[1] + 5, ((@DesktopHeight - $V2M_GUI[2]) / 2), -1, BitOR(128, 8))
 
@@ -297,8 +304,7 @@ $V2M_GUI[28] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_G
 $CurLeft = $CurLeft + 90
 $V2M_GUI[29] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "DEBUG_BTN_STOP", "STOP SSH"), $CurLeft, $V2M_GUI_DebugHeight - 24, 60, 20)
 $CurLeft = $CurLeft + 80
-$V2M_GUI[30] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "DEBUG_BTN_COPY", "DEBUG > CLIPBOARD"), $CurLeft, $V2M_GUI_DebugHeight - 24, 120, 20)
+$V2M_GUI[30] = GUICtrlCreateButton(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "DEBUG_BTN_COPY", "DEBUG > CLIPBOARD"), $CurLeft, $V2M_GUI_DebugHeight - 24, 160, 20)
 
 GUISwitch($V2M_GUI[27])
-GUISetState(@SW_HIDE, $V2M_GUI_DebugTitle )
-
+GUISetState(@SW_HIDE, $V2M_GUI_DebugTitle)

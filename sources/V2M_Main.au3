@@ -1,27 +1,31 @@
-#Region --- Script patched by FreeStyle code Start 01.02.2009 - 08:58:04
-#EndRegion --- Script patched by FreeStyle code Start 01.02.2009 - 08:58:04
-#RequireAdmin
+;#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\compiled\v2m.ico
 #AutoIt3Wrapper_Outfile=..\compiled\VNC2Me.exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UseUpx=n
-#AutoIt3Wrapper_Res_Comment=Creates Secure SSH tunnel, VNC then tunnels through this, making VNC ALOT more secure.
+#AutoIt3Wrapper_Res_Comment=Creates Secure SSH tunnel through which VNC then tunnels, making VNC secure.
 #AutoIt3Wrapper_Res_Description=VNC2Me - Allows remote screen sharing securely over the internet.
-#AutoIt3Wrapper_Res_Fileversion=0.2.0.31
+#AutoIt3Wrapper_Res_Fileversion=0.2.0.35
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=y
 #AutoIt3Wrapper_Res_LegalCopyright=Sec IT (AGPL) 2008-2009
 #AutoIt3Wrapper_Res_Field="Made By"|"Jim Dolby"
 #AutoIt3Wrapper_Res_Icon_Add=..\compiled\v2m.ico
+#AutoIt3Wrapper_Res_Icon_Add=..\compiled\icon1.ico
+#AutoIt3Wrapper_Res_Icon_Add=..\compiled\icon2.ico
 #AutoIt3Wrapper_Au3Check_Stop_OnWarning=y
 #AutoIt3Wrapper_Au3Check_Parameters=-q -d -w 1 -w 2 -w 3 -w 4 -w 5 -w 6
-#AutoIt3Wrapper_Run_Tidy=y
-#Tidy_Parameters=/rel /gd
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/striponly
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+#Region --- Script patched by FreeStyle code Start 01.02.2009 - 08:58:04
+#EndRegion --- Script patched by FreeStyle code Start 01.02.2009 - 08:58:04
 #Region Options and includes
-Opt("TrayIconDebug", 1) ;If enabled shows the current script line in the tray icon tip to help debugging.		0 = no debug information (default)	1 = show debug
+if @Compiled Then
+	TraySetToolTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "APPName", "VNC2Me") & " - " & FileGetVersion(@ScriptFullPath))
+Else
+	Opt("TrayIconDebug", 1) ;If enabled shows the current script line in the tray icon tip to help debugging.		0 = no debug information (default)	1 = show debug
+EndIf
 Opt("TrayIconHide", 0) ;Hides the AutoIt tray icon. Note: The icon will still initially appear ~750 milliseconds.		0 = show icon (default)	1 = hide icon
 Opt("TrayMenuMode", 1) ;Extend the behaviour of the script tray icon/menu. This can be done with a combination (adding) of the following values.		0 = default menu items (Script Paused/Exit) are appended to the usercreated menu; usercreated checked items will automatically unchecked; if you double click the tray icon then the controlid is returned which has the "Default"-style (default).		1 = no default menu		2 = user created checked items will not automatically unchecked if you click it		4 = don't return the menuitemID which has the "default"-style in the main contextmenu if you double click the tray icon		8 = turn off auto check of radio item groups
 Opt("MustDeclareVars", 0)
@@ -51,6 +55,7 @@ EndIf
 #Region languages
 If $V2M_GUI_Language = 'Lang_' Then
 	$V2M_GUI_Language = "Lang_" & _Language()
+	$V2M_EventDisplay = V2M_EventLog("Language - Determined OSLang ("&@OSLang&") to be: " & $V2M_GUI_Language, $V2M_EventDisplay, 'dll')
 Else
 	$V2M_EventDisplay = V2M_EventLog("Language - Using language from INI file: " & $V2M_GUI_Language, $V2M_EventDisplay, 'dll')
 EndIf
@@ -68,26 +73,15 @@ If IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "MAIN_ENABLE_SONAR", 1) = 1 
 EndIf
 #EndRegion Mouse Sonar
 #Region clean the decks
-; uncomment the following to start the timer as soon as the application is opened ...
-;V2M_Timer('Start')
-If ProcessExists($V2M_VNC_SC) Then
-	ProcessClose($V2M_VNC_SC)
-EndIf
-If ProcessExists($V2M_VNC_SVR) Then
-	ProcessClose($V2M_VNC_SVR)
-EndIf
-If ProcessExists($V2M_VNC_VWR) Then
-	ProcessClose($V2M_VNC_VWR)
-EndIf
-If ProcessExists("v2mplink.exe") Then
-	ProcessClose("v2mplink.exe")
-EndIf
+V2MExitSSH()
+V2MExitVNC()
 #EndRegion clean the decks
 #Region TrayIcon setup
 TraySetState(1) ;flash the trayicon (stops flashing when ssh connected)
 TraySetIcon("v2m.ico")
 $V2M_Tray[9] = TrayCreateItem(" ")
 $V2M_Tray[8] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_ABOUT", "ABOUT"))
+TrayItemSetState($V2M_Tray[8], 64 + 512)
 TrayCreateItem("")
 $V2M_Tray[2] = TrayCreateMenu(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW", "SHOW"))
 $V2M_Tray[1] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_EXIT", "EXIT"))
@@ -100,6 +94,8 @@ Else
 	$V2M_Tray[6] = 1
 EndIf
 $V2M_Tray[7] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_NONE", "NONE"), $V2M_Tray[2], -1, 1)
+TraySetClick(16)
+TraySetState()
 #EndRegion TrayIcon setup
 #Region Commandline
 ;=========================================================================================================================================================
@@ -146,20 +142,29 @@ EndIf
 ;=========================================================================================================================================================
 Global $curVal = ""
 If @OSVersion = "WIN_VISTA" Then
-	Run(@ScriptDir & "\Aero_disable.exe")
+	$V2M_EventDisplay = V2M_EventLog("CORE - @OSVersion = WIN_VISTA", $V2M_EventDisplay, 'dll')
+;	Run(@ScriptDir & "\Aero_disable.exe")
+	;If all you want to do is disable Vista AERO, you don't need a separate program to do it... you can do it in a batch file or directly from the winvnc.exe program in VC6. 
+
+	RunWait(@ComSpec & ' /c Rundll32.exe dwmApi #104', @SystemDir, @SW_SHOWNOACTIVATE) ;disables aero
+;	RunWait(@ComSpec & ' /c sc stop uxsms', @SystemDir, @SW_SHOWNOACTIVATE)
 	If RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_VNC") = "" Then ; if the value doesn't exist
 		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop")
 		RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_VNC", "REG_DWORD", $curVal)
+		$V2M_EventDisplay = V2M_EventLog("VISTA - PromptOnSecureDesktop", $V2M_EventDisplay, 'dll')
 	EndIf
 	RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", "REG_DWORD", 0)
 	If RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_VNC") = "" Then ; if the value doesn't exist
 		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin")
 		RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_VNC", "REG_DWORD", $curVal)
+		$V2M_EventDisplay = V2M_EventLog("VISTA - ConsentPromptBehaviorAdmin", $V2M_EventDisplay, 'dll')
 	EndIf
 	RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", "REG_DWORD", 0)
 EndIf
 #EndRegion Vista Mods
 #Region Main Application Loop
+; uncomment the following to start the timer as soon as the application is opened ...
+;V2M_Timer('Start')
 ;=========================================================================================================================================================
 ;=================== Loop unitl we hit Exit (or get an error)
 ;=========================================================================================================================================================
@@ -275,7 +280,35 @@ While $V2M_Exit = 0
 					EndIf
 				EndIf
 			EndIf ;
-		Else ;ssh not wanted
+		ElseIf $V2M_Status[3][11] Then ;uvncwanted
+			;			V2M_EventLog("UVNC Connection wanted", $V2M_EventDisplay, 'dll')
+			If Not $V2M_Status[3][12] Then
+				V2M_EventLog("UVNC Connection wanted, not started", $V2M_EventDisplay, 'dll')
+				If (IniRead(@ScriptDir & "\ultravnc.ini", "SC", "SCNUMBERCONNECTIONS", 0)) > 0 And GUICtrlRead($V2M_GUI[55]) <> 'Manual' Then
+					$V2M_Status[4][1] = V2M_UVNC_NamesNumber(GUICtrlRead($V2M_GUI[55]))
+					$V2M_Status[4][2] = IniRead(@ScriptDir & "\ultravnc.ini", "SC", "SCName_" & $V2M_Status[4][1], "")
+					$V2M_Status[4][3] = IniRead(@ScriptDir & "\ultravnc.ini", "SC", "SCIP_" & $V2M_Status[4][1], "")
+					$V2M_Status[4][4] = IniRead(@ScriptDir & "\ultravnc.ini", "SC", "SCPort_" & $V2M_Status[4][1], "")
+					$V2M_Status[4][5] = IniRead(@ScriptDir & "\ultravnc.ini", "SC", "SCID_" & $V2M_Status[4][1], "")
+					V2M_EventLog("UVNC Connections settings: name=" & $V2M_Status[4][2] & ", IP=" & $V2M_Status[4][3] & ", Port=" & $V2M_Status[4][4] & ", ID=" & $V2M_Status[4][5], $V2M_EventDisplay, 'dll')
+					If $V2M_Status[4][5] = "" Then
+						V2M_EventLog("Run("&$V2M_VNC_UVNC & " -connect " & $V2M_Status[4][3] & "::" & $V2M_Status[4][4] & " -run, "&@ScriptDir&", "&@SW_HIDE&")", $V2M_EventDisplay, 'dll')
+						Run($V2M_VNC_UVNC & " -connect " & $V2M_Status[4][3] & "::" & $V2M_Status[4][4] & " -run", @ScriptDir, @SW_SHOW)
+					Else
+						Run($V2M_VNC_UVNC & " -autoreconnect -ID:" & $V2M_Status[4][5] & " -connect " & $V2M_Status[4][3] & "::" & $V2M_Status[4][4] & " -run", @ScriptDir, @SW_SHOW)
+					EndIf
+				Else
+					V2M_EventLog("GUICtrlRead($V2M_GUI[55]) = 'Manual' Or GUICtrlRead($V2M_GUI[55]) = '' (because No 'SC' Section found in ultravnc.ini)", $V2M_EventDisplay, 'dll')
+					;read no addresses, ask for them.
+					V2M_EventLog("Run("&@ScriptDir &"\"& $V2M_VNC_UVNC & " -autoreconnect -connect " & GUICtrlRead($V2M_GUI[51]) & "::" & GUICtrlRead($V2M_GUI[52]) &","& @ScriptDir &","& @SW_HIDE&")", $V2M_EventDisplay, 'dll')
+;					Run(@ScriptDir &"\"& $V2M_VNC_UVNC & " -autoreconnect -connect " & GUICtrlRead($V2M_GUI[51]) & "::" & GUICtrlRead($V2M_GUI[52]), @ScriptDir, @SW_HIDE)
+					Run(@ScriptDir &"\"& $V2M_VNC_UVNC & " -connect " & GUICtrlRead($V2M_GUI[51]) & "::" & GUICtrlRead($V2M_GUI[52]) & " -run", @ScriptDir, @SW_HIDE)
+				EndIf
+				$V2M_Status[3][12] = 1
+			Else
+				$V2M_EventDisplay = V2M_EventLog("UVNC Connection started", $V2M_EventDisplay, 'dll')
+			EndIf
+		Else ;SSH/UVNC not wanted
 			TraySetState(8)
 		EndIf
 		If $V2MGUITimer = 1 Then
@@ -464,15 +497,42 @@ While $V2M_Exit = 0
 			$V2M_EventDisplay = V2M_EventLog("VWR - SVR Connection", $V2M_EventDisplay, 'dll')
 			$V2M_Status[3][9] = 1 ;vwrSVRwanted
 			;			MsgBox(0, "", "SVR", 1)
+		Case $V2M_GUI[53] ;UVNC connect button
+			V2M_EventLog("UVNC Connection wanted", $V2M_EventDisplay, 'dll')
+			$V2M_Status[1][1] = 'UVNC'
+			$V2M_Status[3][1] = 0 ; SSH wanted
+			$V2M_Status[3][4] = 0 ; SC wanted
+			$V2M_Status[3][6] = 0 ; svrwanted
+			$V2M_Status[3][8] = 0 ; vwrscwanted
+			$V2M_Status[3][9] = 0 ; vwrsvrwanted
+			$V2M_Status[3][11] = 1 ; uvncwanted
+		Case $V2M_GUI[54] ;UVNC stop button
+			$V2M_EventDisplay = V2M_EventLog("UVNC Connection stoped", $V2M_EventDisplay, 'dll')
+			$V2M_Status[1][1] = ''
+			$V2M_Status[3][1] = 0 ; SSH wanted
+			$V2M_Status[3][4] = 0 ; SC wanted
+			$V2M_Status[3][6] = 0 ; svrwanted
+			$V2M_Status[3][8] = 0 ; vwrscwanted
+			$V2M_Status[3][9] = 0 ; vwrsvrwanted
+			$V2M_Status[3][11] = 0 ; uvncwanted
+			$V2M_Status[3][12] = 0 ; uvncstarted
+			V2MExitVNC()
+			
 	EndSwitch
 	;
 	;=========================================================================================================================================================
 	; Get any messages from the TrayIcon
 	$V2M_TrayMsg = TrayGetMsg()
 	Switch $V2M_TrayMsg
+		Case $TRAY_EVENT_PRIMARYDOWN
+			$V2M_EventDisplay = V2M_EventLog("GUI - Tray PrimaryClick", $V2M_EventDisplay, 'dll')
+			V2MAboutBox()
 		Case $V2M_Tray[1] ; Exit
 			$V2M_EventDisplay = V2M_EventLog("GUI - Exiting (Tray)", $V2M_EventDisplay, 'dll')
 			$V2M_Exit = 1
+		Case $V2M_Tray[8] ; About
+			$V2M_EventDisplay = V2M_EventLog("GUI - Tray About", $V2M_EventDisplay, 'dll')
+			V2MAboutBox()
 		Case $V2M_Tray[3] ;show > main
 			TrayItemSetState($V2M_Tray[3], 1)
 			$V2M_EventDisplay = V2M_EventLog(V2MGuiChangeState($V2M_GUI_Mini, $V2M_GUI_MiniTitle, 'hide'), $V2M_EventDisplay, 'dll')
