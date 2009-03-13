@@ -455,7 +455,7 @@ Func OnAutoItExit()
 	;exit ssh & vnc
 	V2MExitSSH()
 	V2MExitVNC()
-	ProcessClose("Aero_disable.exe") ; included here so that it closes before the temp folder it is located in gets deleted
+;	ProcessClose("Aero_disable.exe") ; included here so that it closes before the temp folder it is located in gets deleted
 	If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "GUI_TIMER_SHOW", 1) = 1 Then
 		;		Local $timer
 		$timer = V2M_Timer("Stop")
@@ -463,38 +463,15 @@ Func OnAutoItExit()
 			MsgBox(0, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_TIMER_TITLE", "CONNECTION TIMER"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_TIMER_TEXT", "SESSION CONNECTED FOR: ") & " " & $timer, 60)
 		EndIf
 	EndIf
-	Local $curVal
-	_RefreshSystemTray(50)
-	;	If $V2M_VNC_PasswordRegAdded = 1 Then
-	;		MsgBox(0, "Debug:", "I added Password, so Deleting it NOW", 2)
-	;		RegDelete("HKEY_CURRENT_USER\Software\ORL\WinVNC3", "Password")
-	;	EndIf
-	;	If $Debug = 1 Then MsgBox(0,"Debug - OnAutoItExit()","Program has finished " & @EXITMETHOD)
 	If @OSVersion = "WIN_VISTA" Then
 		V2M_EventLog("EXIT - @OSVersion = WIN_VISTA ", $V2M_EventDisplay, 'dll')
-		ProcessClose("aero_disable.exe") ; included here a second time, just in case AutoIt is forcibly closed
-		RunWait(@ComSpec & " /c sc start uxsms", @SystemDir, @SW_HIDE)
-		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_VNC")
-		If $curVal = 0 Or $curVal = 1 Then
-			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", "REG_DWORD", $curVal)
-		EndIf
-		RegDelete("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_VNC")
-
-		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_VNC")
-		If $curVal = 0 Or $curVal = 1 Or $curVal = 2 Then
-			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", "REG_DWORD", $curVal)
-		EndIf
-		RegDelete("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_VNC")
+		;Enable UAC
+		Vista_ControlUAC("Enable")
+		;Enable Aero
+		Vista_ControlAero("Enable")
 	EndIf
-	;	ProcessClose('v2mplink.exe')
-	;	ProcessClose('v2mvwr.exe')
-	;	ProcessClose('v2msc.exe')
-	;	Opt('WinTitleMatchMode', 4)
-	;	ControlSend('classname=Progman', '', 'SysListView321', '{F5}')
 	;turn the wallpaper back on ...
 	DllCall("user32.dll", "int", "SystemParametersInfo", "int", 20, "int", 0, "str", RegRead("HKEY_CURRENT_USER\Control Panel\Desktop", "Wallpaper"), "int", 3)
-	;turn AERO back on
-	RunWait(@ComSpec & ' /c Rundll32.exe dwmApi #102', @SystemDir, @SW_SHOWNOACTIVATE) ;enables aero
 	If StringInStr(@ScriptFullPath, "\7z") Then
 		V2M_EventLog("RUN - : Path contains '\7z', all files will now be deleted", $V2M_EventDisplay, 'dll')
 		If @Compiled Then _SelfDelete(5)
@@ -502,7 +479,9 @@ Func OnAutoItExit()
 		V2M_EventLog("EXIT - Path NOT contain '\7z', VNC2Me must be installed or not using 7z packaging, not deleting files", $V2M_EventDisplay, 'dll')
 	EndIf
 	$V2M_EventDisplay = V2M_EventLog(' ', $V2M_EventDisplay, 'full')
-	Exit
+;	Exit
+	;	If $Debug = 1 Then MsgBox(0,"Debug - OnAutoItExit()","Program has finished " & @EXITMETHOD)
+	_RefreshSystemTray(50)
 EndFunc   ;==>OnAutoItExit
 
 ;===============================================================================
@@ -674,6 +653,56 @@ Func _Language()
 EndFunc   ;==>_Language
 
 ;=========================================================================================================================================================
+;============================================================== Vista Functions ==========================================================================
+;=========================================================================================================================================================
+
+Func Vista_ControlAero($control = "Enable")
+	Local $DWMdll = DllOpen("dwmapi.dll")
+	If $control = "Disable" Then
+		DllCall($DWMdll, "int", "DwmEnableComposition", "uint", $DWM_EC_ENABLECOMPOSITION)
+	ElseIf $control = "Enable" Then
+		DllCall($DWMdll, "int", "DwmEnableComposition", "uint", $DWM_EC_DISABLECOMPOSITION)
+	EndIf
+EndFunc   ;==>Vista_ControlAero
+
+Func Vista_GetComposition()
+	Local $DWMdll = DllOpen("dwmapi.dll")
+	Local $status[10]
+	$status = DllCall($DWMdll, "int", "DwmIsCompositionEnabled", "int*", "")
+	Return $status[1]
+EndFunc   ;==>Vista_GetComposition
+
+Func Vista_ControlUAC($control = "Enable")
+	Local $curVal
+	If $control = "Disable" Then
+		If RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_V2M") = "" Then ; if the value doesn't exist
+			$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop")
+			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_V2M", "REG_DWORD", $curVal)
+			$V2M_EventDisplay = V2M_EventLog("VISTA - PromptOnSecureDesktop", $V2M_EventDisplay, 'dll')
+			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", "REG_DWORD", 0)
+		EndIf
+		If RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_V2M") = "" Then ; if the value doesn't exist
+			$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin")
+			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_V2M", "REG_DWORD", $curVal)
+			$V2M_EventDisplay = V2M_EventLog("VISTA - ConsentPromptBehaviorAdmin", $V2M_EventDisplay, 'dll')
+			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", "REG_DWORD", 0)
+		EndIf
+	ElseIf $control = "Enable" Then
+		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_V2M")
+		If $curVal = 0 Or $curVal = 1 Then
+			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", "REG_DWORD", $curVal)
+			RegDelete("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_V2M")
+		EndIf
+
+		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_V2M")
+		If $curVal = 0 Or $curVal = 1 Or $curVal = 2 Then
+			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", "REG_DWORD", $curVal)
+			RegDelete("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_V2M")
+		EndIf
+	EndIf
+EndFunc   ;==>Vista_ControlUAC
+
+;=========================================================================================================================================================
 ;=========================================================================================================================================================
 ;=========================================================================================================================================================
 
@@ -756,4 +785,4 @@ EndFunc   ;==>_Language
 ;	GUICtrlSetData($hMapPasswordEdit, $gMapPassword)
 ;EndFunc   ;==>SettingsToGUI
 
-;=========================================================================================================================================================
+;=========================================================================================================================================================;### Tidy Error -> func is never closed in your script.;### Tidy Error -> func is never closed in your script.

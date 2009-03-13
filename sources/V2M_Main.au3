@@ -143,23 +143,10 @@ EndIf
 Global $curVal = ""
 If @OSVersion = "WIN_VISTA" Then
 	$V2M_EventDisplay = V2M_EventLog("CORE - @OSVersion = WIN_VISTA", $V2M_EventDisplay, 'dll')
-;	Run(@ScriptDir & "\Aero_disable.exe")
-	;If all you want to do is disable Vista AERO, you don't need a separate program to do it... you can do it in a batch file or directly from the winvnc.exe program in VC6. 
-
-	RunWait(@ComSpec & ' /c Rundll32.exe dwmApi #104', @SystemDir, @SW_SHOWNOACTIVATE) ;disables aero
-;	RunWait(@ComSpec & ' /c sc stop uxsms', @SystemDir, @SW_SHOWNOACTIVATE)
-	If RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_VNC") = "" Then ; if the value doesn't exist
-		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop")
-		RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_VNC", "REG_DWORD", $curVal)
-		$V2M_EventDisplay = V2M_EventLog("VISTA - PromptOnSecureDesktop", $V2M_EventDisplay, 'dll')
-	EndIf
-	RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", "REG_DWORD", 0)
-	If RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_VNC") = "" Then ; if the value doesn't exist
-		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin")
-		RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_VNC", "REG_DWORD", $curVal)
-		$V2M_EventDisplay = V2M_EventLog("VISTA - ConsentPromptBehaviorAdmin", $V2M_EventDisplay, 'dll')
-	EndIf
-	RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", "REG_DWORD", 0)
+	;disable UAC
+	Vista_ControlUAC("Disable")
+	;disable Aero
+	Vista_ControlAero("Disable")
 EndIf
 #EndRegion Vista Mods
 #Region Main Application Loop
