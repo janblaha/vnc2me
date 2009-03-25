@@ -1,23 +1,23 @@
-;#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=..\compiled\v2m.ico
-#AutoIt3Wrapper_Outfile=..\compiled\VNC2Me.exe
+#AutoIt3Wrapper_icon=..\compiled\v2m.ico
+#AutoIt3Wrapper_outfile=..\compiled\VNC2Me.exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Creates Secure SSH tunnel through which VNC then tunnels, making VNC secure.
 #AutoIt3Wrapper_Res_Description=VNC2Me - Allows remote screen sharing securely over the internet.
-#AutoIt3Wrapper_Res_Fileversion=0.2.0.35
-#AutoIt3Wrapper_Res_FileVersion_AutoIncrement=y
+#AutoIt3Wrapper_Res_Fileversion=0.2.1.0
+#AutoIt3Wrapper_Res_Fileversion_AutoIncrement=p
 #AutoIt3Wrapper_Res_LegalCopyright=Sec IT (AGPL) 2008-2009
 #AutoIt3Wrapper_Res_Field="Made By"|"Jim Dolby"
 #AutoIt3Wrapper_Res_Icon_Add=..\compiled\v2m.ico
 #AutoIt3Wrapper_Res_Icon_Add=..\compiled\icon1.ico
 #AutoIt3Wrapper_Res_Icon_Add=..\compiled\icon2.ico
-#AutoIt3Wrapper_Au3Check_Stop_OnWarning=y
-#AutoIt3Wrapper_Au3Check_Parameters=-q -d -w 1 -w 2 -w 3 -w 4 -w 5 -w 6
+#AutoIt3Wrapper_AU3Check_Stop_OnWarning=y
+#AutoIt3Wrapper_AU3Check_Parameters=-q -d -w 1 -w 2 -w 3 -w 4 -w 5 -w 6
 #AutoIt3Wrapper_Run_Obfuscator=y
 #Obfuscator_Parameters=/striponly
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+;#RequireAdmin
 #Region --- Script patched by FreeStyle code Start 01.02.2009 - 08:58:04
 #EndRegion --- Script patched by FreeStyle code Start 01.02.2009 - 08:58:04
 #Region Options and includes
@@ -38,13 +38,17 @@ If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "MAIN_ENABLE_DEBUG", "") <>
 	$V2M_Status[1][2] = 1
 EndIf
 #include "V2M_Functions.au3"
+V2M_Update()
 #include "Includes\_RefreshSystemTray.au3"
+;#include "Includes\_InetFileUpdate.au3"
 ;#include "Includes\Autoit_funcs.au3"
 #include <Constants.au3>
 #include <WindowsConstants.au3>
 #include <StaticConstants.au3>
 #include <GuiStatusBar.au3>
 #include <ProgressConstants.au3>
+;#include "Includes\IE.au3"
+;#include <IE.au3>
 ;#Include <GUIConstantsEx.au3>
 ;#Include <GuiConstants.au3>
 ;#Include <Date.au3>
@@ -80,20 +84,20 @@ V2MExitVNC()
 TraySetState(1) ;flash the trayicon (stops flashing when ssh connected)
 TraySetIcon("v2m.ico")
 $V2M_Tray[9] = TrayCreateItem(" ")
-$V2M_Tray[8] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_ABOUT", "ABOUT"))
+$V2M_Tray[8] = TrayCreateItem(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_ABOUT", "ABOUT"))
 TrayItemSetState($V2M_Tray[8], 64 + 512)
 TrayCreateItem("")
-$V2M_Tray[2] = TrayCreateMenu(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW", "SHOW"))
-$V2M_Tray[1] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_EXIT", "EXIT"))
-$V2M_Tray[3] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_MAIN", "MAIN"), $V2M_Tray[2], -1, 1)
-$V2M_Tray[4] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_MINI", "MINI"), $V2M_Tray[2], -1, 1)
-;$V2M_Tray[5] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_TIMER", "TIMER"), $V2M_Tray[2], -1, 1)
+$V2M_Tray[2] = TrayCreateMenu(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW", "SHOW"))
+$V2M_Tray[1] = TrayCreateItem(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_EXIT", "EXIT"))
+$V2M_Tray[3] = TrayCreateItem(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_MAIN", "MAIN"), $V2M_Tray[2], -1, 1)
+$V2M_Tray[4] = TrayCreateItem(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_MINI", "MINI"), $V2M_Tray[2], -1, 1)
+;$V2M_Tray[5] = TrayCreateItem(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_TIMER", "TIMER"), $V2M_Tray[2], -1, 1)
 If $V2M_Status[1][2] = 1 Then
-	$V2M_Tray[6] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_DEBUG", "DEBUG"), $V2M_Tray[2], -1, 1)
+	$V2M_Tray[6] = TrayCreateItem(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_DEBUG", "DEBUG"), $V2M_Tray[2], -1, 1)
 Else
 	$V2M_Tray[6] = 1
 EndIf
-$V2M_Tray[7] = TrayCreateItem(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_NONE", "NONE"), $V2M_Tray[2], -1, 1)
+$V2M_Tray[7] = TrayCreateItem(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAY_MNU_SHOW_NONE", "NONE"), $V2M_Tray[2], -1, 1)
 TraySetClick(16)
 TraySetState()
 #EndRegion TrayIcon setup
@@ -130,10 +134,10 @@ If $cmdline[0] > 0 Then
 			;start service.
 		Case Else
 			$V2M_EventDisplay = V2M_EventLog("Cmdline Arguements not recognised", $V2M_EventDisplay, 'dll')
-			TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_TITLE", "APP_START_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_LINE2", ""), 10)
+			TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_TITLE", "APP_START_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_LINE2", ""), 10)
 	EndSwitch
 Else
-	$V2M_EventDisplay = V2M_EventLog(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_LINE1", "APP_START_TITLE"), $V2M_EventDisplay, 'full')
+	$V2M_EventDisplay = V2M_EventLog(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_START_LINE1", "APP_START_TITLE"), $V2M_EventDisplay, 'full')
 EndIf
 #EndRegion Commandline
 #Region Vista Mods
@@ -192,8 +196,8 @@ While $V2M_Exit = 0
 						ElseIf $V2M_SSH[22] = 1 Then ;we now have stable ssh connection
 							$V2M_EventDisplay = V2M_EventLog("SSH - Stable Connection", $V2M_EventDisplay, 'full')
 							$V2M_Status[3][3] = 1 ; ssh is connected
-							TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_SSH_CONNECTED_TITLE", ""), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_SSH_CONNECTED_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_SSH_CONNECTED_LINE2", "") & @CR & $V2M_SessionCode, 10)
-							TrayItemSetText($V2M_Tray[9], IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MAIN_SC_SSN", "SESSION CODE") & " = " & $V2M_SessionCode)
+							TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_SSH_CONNECTED_TITLE", ""), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_SSH_CONNECTED_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_SSH_CONNECTED_LINE2", "") & @CR & $V2M_SessionCode, 10)
+							TrayItemSetText($V2M_Tray[9], IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MAIN_SC_SSN", "SESSION CODE") & " = " & $V2M_SessionCode)
 							GUICtrlSetData($V2M_GUI[12] & @CRLF, $V2M_SessionCode) ; send the session code to the GUI's
 							GUICtrlSetData($V2M_GUI[26] & @CRLF, $V2M_SessionCode) ; send the session code to the GUI's
 							V2M_Timer('Start') ; start the timer
@@ -228,10 +232,10 @@ While $V2M_Exit = 0
 							$V2M_EventDisplay = V2M_EventLog("SSH AUTH - 'login' detected", $V2M_EventDisplay, 'full')
 							If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "USERNAME", "") = "" Then
 								$V2M_EventDisplay = V2M_EventLog("SSH AUTH - using compiled username, or asking for it.", $V2M_EventDisplay, 'dll')
-								$V2M_SSH[2] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], $V2M_SSH[2], IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHUSER_TITLE", "SSH USERNAME"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHUSER_TEXT", "ENTER SSH USERNAME"))
+								$V2M_SSH[2] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], $V2M_SSH[2], IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHUSER_TITLE", "SSH USERNAME"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHUSER_TEXT", "ENTER SSH USERNAME"))
 							Else
 								$V2M_EventDisplay = V2M_EventLog("SSH AUTH - using username from INI file.", $V2M_EventDisplay, 'dll')
-								$V2M_SSH[2] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "USERNAME", ""), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHUSER_TITLE", "SSH USERNAME"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHUSER_TEXT", "ENTER SSH USERNAME"))
+								$V2M_SSH[2] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "USERNAME", ""), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHUSER_TITLE", "SSH USERNAME"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHUSER_TEXT", "ENTER SSH USERNAME"))
 							EndIf
 							ContinueLoop
 						ElseIf $V2M_SSH[14] = 1 Then ; password found
@@ -239,10 +243,10 @@ While $V2M_Exit = 0
 							$V2M_EventDisplay = V2M_EventLog("SSH AUTH - 'password' detected", $V2M_EventDisplay, 'full')
 							If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "PASSWORD", "") = "" Then
 								$V2M_EventDisplay = V2M_EventLog("SSH AUTH - using compiled password, or asking for it.", $V2M_EventDisplay, 'dll')
-								$V2M_SSH[3] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], $V2M_SSH[3], IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHPASS_TITLE", "SSH PASSWORD"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHPASS_TEXT", "ENTER SSH PASSWORD"), IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "PASSWORDHASH", "*"))
+								$V2M_SSH[3] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], $V2M_SSH[3], IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHPASS_TITLE", "SSH PASSWORD"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHPASS_TEXT", "ENTER SSH PASSWORD"), IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "PASSWORDHASH", "*"))
 							Else
 								$V2M_EventDisplay = V2M_EventLog("SSH AUTH - using password from INI file.", $V2M_EventDisplay, 'dll')
-								$V2M_SSH[3] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "PASSWORD", ""), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHPASS_TITLE", "SSH PASSWORD"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHSVR_TITLE", "ENTER SSH PASSWORD"), IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "PASSWORDHASH", "*"))
+								$V2M_SSH[3] = V2MInBoxSTDINWrite($V2M_ProcessIDs[1], IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "PASSWORD", ""), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHPASS_TITLE", "SSH PASSWORD"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHSVR_TITLE", "ENTER SSH PASSWORD"), IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_Server", "PASSWORDHASH", "*"))
 							EndIf
 							ContinueLoop
 						EndIf
@@ -331,13 +335,13 @@ While $V2M_Exit = 0
 				$V2M_EventDisplay = V2M_EventLog(V2MGuiChangeState($V2M_GUI_Main, $V2M_GUI_MainTitle, 'hide'), $V2M_EventDisplay, 'dll')
 				$V2M_EventDisplay = V2M_EventLog(V2MGuiChangeState($V2M_GUI_Mini, $V2M_GUI_MiniTitle, 'show'), $V2M_EventDisplay, 'dll')
 				$V2M_Status[2][1] = 'hide'
-				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_TITLE", "APP_GUISWITCH_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE2", ""), 10)
+				TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_TITLE", "APP_GUISWITCH_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE2", ""), 10)
 				;				TrayTip("V2M Tip ", "To Exit VNC2Me" & @CR & "Right Click this Icon", 10)
 			ElseIf $V2M_Status[2][2] = 'show' Then ;mini GUI
 				$V2M_EventDisplay = V2M_EventLog(V2MGuiChangeState($V2M_GUI_Mini, $V2M_GUI_MiniTitle, 'hide'), $V2M_EventDisplay, 'dll')
 				$V2M_EventDisplay = V2M_EventLog(V2MGuiChangeState($V2M_GUI_Main, $V2M_GUI_MainTitle, 'show'), $V2M_EventDisplay, 'dll')
 				$V2M_Status[2][2] = 'hide'
-				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_TITLE", "APP_GUISWITCH_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE2", ""), 10)
+				TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_TITLE", "APP_GUISWITCH_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_GUISWITCH_LINE2", ""), 10)
 				;				TrayTip("V2M Tip ", "To Exit VNC2Me" & @CR & "Right Click this Icon", 10)
 			EndIf
 		Case $V2M_GUI[17] ;Main exit button
@@ -352,7 +356,7 @@ While $V2M_Exit = 0
 		Case $V2M_GUI[30] ; debug copy > clipboard clicked
 			$clipboard = GUICtrlRead($V2M_GUI_DebugOutputEdit)
 			ClipPut($clipboard)
-			TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_DEBUG_COPIED_TITLE", "DEBUG_COPIED_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_DEBUG_COPIED_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_DEBUG_COPIED_LINE2", ""), 10)
+			TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_DEBUG_COPIED_TITLE", "DEBUG_COPIED_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_DEBUG_COPIED_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_DEBUG_COPIED_LINE2", ""), 10)
 		Case $V2M_GUI[15] ; MainGUI Help > About Clicked
 			$V2M_EventDisplay = V2M_EventLog("GUI - MainAbout", $V2M_EventDisplay, 'dll')
 			V2MAboutBox()

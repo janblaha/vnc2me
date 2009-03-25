@@ -201,6 +201,6 @@ Global $V2M_ProcessIDs[5] ;[1]=ssh, [2]=vwr, [3]=sc, [4]=svr
 
 
 $V2M_VNC_SC = "V2Msc.exe"
-$V2M_VNC_SVR = "spcwinv.exe"
+$V2M_VNC_SVR = "V2Msvr.exe"
 $V2M_VNC_VWR = "v2mvwr.exe"
 $V2M_VNC_UVNC = "uvnc.exe"

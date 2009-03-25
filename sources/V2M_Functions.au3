@@ -14,12 +14,12 @@
 ; Note(s):
 ;
 ;===============================================================================
-Func V2MAddHostKey()
+Func V2MAddHostKey($hostkey = '')
 	Local $msgbox
 	;Add Host key to knownhosts
 	$V2M_EventDisplay = V2M_EventLog('STDERR found', $V2M_EventDisplay, 1)
 	;	JDs_debug("STDERR found")
-	$msgbox = MsgBox(4, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_HOST_TITLE", "HOST NOT CACHED"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_HOST_TEXT", "THIS HOST IS NOT KNOWN, DO YOU WANT TO ADD IT TO KNOWN HOSTS ???"))
+	$msgbox = MsgBox(4, IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_HOST_TITLE", "HOST NOT CACHED"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_HOST_TEXT", "THIS HOST IS NOT KNOWN, DO YOU WANT TO ADD IT TO KNOWN HOSTS ???") & @CRLF & "$hostkey = " & $hostkey)
 	If $msgbox = 6 Then
 		StdinWrite($V2M_ProcessIDs[1], "y " & @CR)
 	ElseIf $msgbox = 7 Then
@@ -187,7 +187,7 @@ Func V2M_startvnc($how = 'ssh')
 			If Not $V2M_Status[3][7] Then
 				$V2M_EventDisplay = V2M_EventLog("VNC - Starting SVR via SSH", $V2M_EventDisplay, 'debug')
 				;				If ProcessExists($V2M_VNC_SVR) Then ProcessClose($V2M_VNC_SVR)
-				$V2M_ProcessIDs[4] = Run(@ScriptDir & "\" & $V2M_VNC_SVR & " AcceptCutText=0 AcceptPointerEvents=0 AcceptKeyEvents=0 AlwaysShared=1 LocalHost=1 SecurityTypes=None PortNumber=25900", @ScriptDir, @SW_MINIMIZE, 7) ;run svr
+				$V2M_ProcessIDs[4] = Run(@ScriptDir & "\" & $V2M_VNC_SVR & " AcceptCutText=0 AcceptPointerEvents=0 AcceptKeyEvents=0 AlwaysShared=1 LocalHost=1 SecurityTypes=None PortNumber=25900", @ScriptDir, @SW_HIDE, 7) ;run svr
 				$V2M_Status[3][7] = 1 ;	flag As started
 				Sleep(2000)
 				Return ("SVRviaSSH")
@@ -282,14 +282,14 @@ Func V2MSSHConnect()
 	ProcessClose('v2mplink.exe')
 
 	If $V2M_SessionCode = '' Then
-		MsgBox(0, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSN_TITLE", "BLANK SESSION CODE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSN_TEXT", "PLEASE ENTER THE SESSION CODE AND TRY AGAIN"), 20)
+		MsgBox(0, IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSN_TITLE", "BLANK SESSION CODE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSN_TEXT", "PLEASE ENTER THE SESSION CODE AND TRY AGAIN"), 20)
 		$V2M_EventDisplay = V2M_EventLog("GUI - Session Code was blank", $V2M_EventDisplay, 'dll')
 		$V2M_Status[3][1] = 0 ; SSH notwanted
 	Else
 		$V2M_EventDisplay = V2M_EventLog("SSH - Starting at " & @HOUR & ":" & @MIN & ":" & @SEC & ", for " & $V2M_Status[1][1] & " Connections, (Session Code = " & $V2M_SessionCode & ")", $V2M_EventDisplay, 'Full')
 		If $V2M_SSH[1] = "" Then
 			$V2M_EventDisplay = V2M_EventLog("SSH - No Hostname set", $V2M_EventDisplay, 'Full')
-			$V2M_SSH[1] = InputBox(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHSVR_TITLE", "HOST SERVER"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_SSHSVR_TEXT", "CONNECT TO WHICH SSH SERVER ?"))
+			$V2M_SSH[1] = InputBox(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHSVR_TITLE", "HOST SERVER"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_SSHSVR_TEXT", "CONNECT TO WHICH SSH SERVER ?"))
 			If @error = 1 Then
 				$V2M_Status[3][1] = 0 ;sshwanted = 0
 				$V2M_Status[1][1] = ''
@@ -300,24 +300,24 @@ Func V2MSSHConnect()
 
 		If $V2M_Status[1][1] = 'VWR' Then
 			If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SC_ONLY", 0) = 1 Then
-				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_TITLE", "VWR_STARTSC_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE2", ""), 30)
+				TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_TITLE", "VWR_STARTSC_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE2", ""), 30)
 				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH[1] & ' -v -N'
 				$V2M_Status[3][8] = 1
 			ElseIf IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "VNC_VWR_SVR_ONLY", 0) = 1 Then
-				TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_TITLE", "VWR_STARTSVR_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE2", ""), 30)
+				TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_TITLE", "VWR_STARTSVR_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE2", ""), 30)
 				$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25900:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
 				$V2M_Status[3][9] = 1
 			Else
 				If $V2M_Status[3][8] = 1 Or GUICtrlRead($V2M_GUI[40]) = 1 Then ;vwrscwanted
-					TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_TITLE", "VWR_STARTSC_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE2", ""), 30)
+					TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_TITLE", "VWR_STARTSC_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSC_LINE2", ""), 30)
 					$Local_ConnectString = @ScriptDir & '\v2mplink.exe -R ' & $V2M_SessionCode & ':127.0.0.1:15500 ' & $V2M_SSH[1] & ' -v -N'
 					$V2M_Status[3][8] = 1
 				ElseIf $V2M_Status[3][9] = 1 Or GUICtrlRead($V2M_GUI[41]) = 1 Then ;vwrsvrwanted
-					TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_TITLE", "VWR_STARTSVR_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE2", ""), 30)
+					TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_TITLE", "VWR_STARTSVR_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_VWR_STARTSVR_LINE2", ""), 30)
 					$Local_ConnectString = @ScriptDir & '\v2mplink.exe -L 25900:127.0.0.1:' & $V2M_SessionCode & ' ' & $V2M_SSH[1] & ' -v -N'
 					$V2M_Status[3][9] = 1
 				Else
-					$local_return = MsgBox(1, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_VWR_TITLE", "VIEWER"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_VWR_TEXT", "NO VIEWER CONNECTION TYPE CHOSEN" & @CRLF & "DEFAULTED TO SC"), 10)
+					$local_return = MsgBox(1, IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_VWR_TITLE", "VIEWER"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_VWR_TEXT", "NO VIEWER CONNECTION TYPE CHOSEN" & @CRLF & "DEFAULTED TO SC"), 10)
 					If $local_return = -1 Or $local_return = 1 Then
 						GUICtrlSetState($V2M_GUI[40], 1) ;Check the SC vwr radio item.
 						$V2M_Status[3][8] = 1 ;vwrSCwanted
@@ -451,16 +451,16 @@ EndFunc   ;==>V2M_EventLog
 ;===============================================================================
 Func OnAutoItExit()
 	Local $timer
-	TrayTip(IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_TITLE", "APP_EXITING_TITLE"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE1", "") & @CR & IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE2", ""), 30)
+	TrayTip(IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_TITLE", "APP_EXITING_TITLE"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE1", "") & @CR & IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "TRAYTIP_APP_EXITING_LINE2", ""), 30)
 	;exit ssh & vnc
 	V2MExitSSH()
 	V2MExitVNC()
-;	ProcessClose("Aero_disable.exe") ; included here so that it closes before the temp folder it is located in gets deleted
+	;	ProcessClose("Aero_disable.exe") ; included here so that it closes before the temp folder it is located in gets deleted
 	If IniRead(@ScriptDir & "\vnc2me_sc.ini", "V2M_GUI", "GUI_TIMER_SHOW", 1) = 1 Then
 		;		Local $timer
 		$timer = V2M_Timer("Stop")
 		If $timer <> "0:0:0" Then
-			MsgBox(0, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_TIMER_TITLE", "CONNECTION TIMER"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_TIMER_TEXT", "SESSION CONNECTED FOR: ") & " " & $timer, 60)
+			MsgBox(0, IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_TIMER_TITLE", "CONNECTION TIMER"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_TIMER_TEXT", "SESSION CONNECTED FOR: ") & " " & $timer, 60)
 		EndIf
 	EndIf
 	If @OSVersion = "WIN_VISTA" Then
@@ -479,7 +479,7 @@ Func OnAutoItExit()
 		V2M_EventLog("EXIT - Path NOT contain '\7z', VNC2Me must be installed or not using 7z packaging, not deleting files", $V2M_EventDisplay, 'dll')
 	EndIf
 	$V2M_EventDisplay = V2M_EventLog(' ', $V2M_EventDisplay, 'full')
-;	Exit
+	;	Exit
 	;	If $Debug = 1 Then MsgBox(0,"Debug - OnAutoItExit()","Program has finished " & @EXITMETHOD)
 	_RefreshSystemTray(50)
 EndFunc   ;==>OnAutoItExit
@@ -523,19 +523,24 @@ Func V2M_Timer($TimerAction = 'Start')
 	EndIf
 EndFunc   ;==>V2M_Timer
 
-;
-;=========================================================================================================================================================
-;
 
+;===============================================================================
 ;
-;=========================================================================================================================================================
+; Description:
+; Parameter(s):
 ;
+;
+;
+;
+; Requirement(s):
+; Return Value(s):
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
 
-;
-;=========================================================================================================================================================
-;
 Func V2MPortRefused()
-	$V2M_MsgBox = MsgBox(270373, IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_PORTC_TITLE", "ERROR - SESSION REFUSED"), IniRead(@ScriptDir & "\vnc2me_sc.ini", $V2M_GUI_Language, "MSG_PORTC_TEXT", "SSH SESSION TUNNEL REFUSED, RETRY SAME SETTINGS ???"), 60)
+	$V2M_MsgBox = MsgBox(270373, IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_PORTC_TITLE", "ERROR - SESSION REFUSED"), IniRead(@ScriptDir & "\v2m_lang.ini", $V2M_GUI_Language, "MSG_PORTC_TEXT", "SSH SESSION TUNNEL REFUSED, RETRY SAME SETTINGS ???"), 60)
 	If $V2M_MsgBox = 2 Then ;cancel pressed
 		V2MExitSSH()
 		V2MExitVNC()
@@ -550,9 +555,22 @@ Func V2MPortRefused()
 		$V2M_ProcessIDs[1] = V2MSSHConnect()
 	EndIf
 EndFunc   ;==>V2MPortRefused
+
+
+;===============================================================================
 ;
-;=========================================================================================================================================================
+; Description:
+; Parameter(s):
 ;
+;
+;
+;
+; Requirement(s):
+; Return Value(s):
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
 
 Func _TicksToTime($iTicks, ByRef $iHours, ByRef $iMins, ByRef $iSecs)
 	If Number($iTicks) > 0 Then
@@ -576,7 +594,16 @@ Func _TicksToTime($iTicks, ByRef $iHours, ByRef $iMins, ByRef $iSecs)
 EndFunc   ;==>_TicksToTime
 
 
-;=========================================================================================================================================================
+;===============================================================================
+;
+; Description:		deletes the running script (if its compiled)
+; Parameter(s):		$idelay - the amount of seconds to wait for initial, and between retry deletes
+; Requirement(s):
+; Return Value(s):
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
 
 Func _SelfDelete($iDelay = 4)
 	If @Compiled Then
@@ -591,6 +618,22 @@ Func _SelfDelete($iDelay = 4)
 		Run(@TempDir & "\scratch.bat", @TempDir, @SW_HIDE)
 	EndIf
 EndFunc   ;==>_SelfDelete
+
+
+;===============================================================================
+;
+; Description:
+; Parameter(s):
+;
+;
+;
+;
+; Requirement(s):
+; Return Value(s):
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
 
 Func V2M_UVNC_ConnectNames()
 	Local $return = '', $iniCount, $loopcount = 0, $V2M_UVNC_ConnectNames = ''
@@ -609,6 +652,22 @@ Func V2M_UVNC_ConnectNames()
 	Return $return
 EndFunc   ;==>V2M_UVNC_ConnectNames
 
+
+;===============================================================================
+;
+; Description:
+; Parameter(s):
+;
+;
+;
+;
+; Requirement(s):
+; Return Value(s):
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
+
 Func V2M_UVNC_NamesNumber($name)
 	Local $return = '', $iniCount, $loopcount = 0
 	$iniCount = IniRead(@ScriptDir & "\ultravnc.ini", "SC", "SCNumberConnections", 0)
@@ -624,7 +683,22 @@ Func V2M_UVNC_NamesNumber($name)
 	;	$return = $V2M_UVNC_ConnectNames
 	Return $return
 EndFunc   ;==>V2M_UVNC_NamesNumber
-;=========================================================================================================================================================
+
+
+;===============================================================================
+;
+; Description:
+; Parameter(s):
+;
+;
+;
+;
+; Requirement(s):
+; Return Value(s):
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
 
 ;MsgBox(0, "Your OS Language:", _Language())
 Func _Language()
@@ -652,9 +726,103 @@ Func _Language()
 	V2M_EventLog('Language loopcount = ' & $loopcount & @CRLF & 'inicount = ' & $iniCount & @CRLF & '@OSLang = ' & @CRLF & @OSLang & " = LANG_IDENT_" & $loopcount, $V2M_EventDisplay, 'dll')
 EndFunc   ;==>_Language
 
+
+;===============================================================================
+;
+; Description:
+; Parameter(s):
+;
+;
+;
+;
+; Requirement(s):
+; Return Value(s):
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
+
+Func V2M_Update()
+	Local $s_GetVersFile, $local_loop, $local_loop_count
+	If IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "INETUPDATE", 1) = 1 Or IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "TESTUPDATE", 0) = 1 Then
+		$V2M_EventDisplay = V2M_EventLog("Updates - Checking for updates from vnc2me.org", $V2M_EventDisplay, 'dll')
+		;#######################################################################################
+		; check for old version control file and delete it
+		;#######################################################################################
+		If FileExists(@TempDir & "\v2m_latestversion.ini") Then
+			If Not FileDelete(@TempDir & "\v2m_latestversion.ini") Then ; problem deleting old version control file
+				$V2M_EventDisplay = V2M_EventLog("Updates - Cannot delete '" & @TempDir & "\v2m_latestversion.ini'", $V2M_EventDisplay, 'dll')
+				MsgBox(262160, StringTrimRight(@ScriptName, 4) & " ERROR", "UPDATE CHECK FAILED" & @CRLF & @CRLF & "Possible cause: Old VCF file cannot be overwritten (may be read only).")
+				Return SetError(3, 0, "262160|" & StringTrimRight(@ScriptName, 4) & " ERROR|UPDATE CHECK FAILED|Possible cause: Old VCF file cannot be overwritten (may be read only).")
+			Else
+				$V2M_EventDisplay = V2M_EventLog("Updates - Deleted '" & @TempDir & "\v2m_latestversion.ini'", $V2M_EventDisplay, 'dll')
+			EndIf
+		Else
+			$V2M_EventDisplay = V2M_EventLog("Updates - VNC2Me update has not been run before on this computer", $V2M_EventDisplay, 'dll')
+		EndIf
+		;#######################################################################################
+		; download version control file from web to temp dir
+		;#######################################################################################
+		$s_GetVersFile = InetGet("http://www.vnc2me.org/files/latestversion.ini", @TempDir & "\v2m_latestversion.ini", 1)
+		If $s_GetVersFile = 0 Then ; version file or internet not available
+			$V2M_EventDisplay = V2M_EventLog("Updates - Unable to get the version information from the internet", $V2M_EventDisplay, 'dll')
+			MsgBox(262160, StringTrimRight(@ScriptName, 4) & " ERROR", "UPDATE CHECK FAILED" & @CRLF & @CRLF & "Possible cause: Connection issues / website offline or version file not found.  Try again later.")
+			Return SetError(4, 0, "262160|" & StringTrimRight(@ScriptName, 4) & " ERROR|UPDATE CHECK FAILED|Possible cause: Connection issues / website offline or version file not found.  Try again later.")
+		Else
+			$V2M_EventDisplay = V2M_EventLog("Updates - Downloaded latest version information to '" & @TempDir & "\v2m_latestversion.ini'", $V2M_EventDisplay, 'dll')
+		EndIf
+		While $local_loop = 0
+			Sleep(250) ; create a delay loop to ensure that file has been downloaded and saved before continuing
+			If FileExists(@TempDir & "\v2m_latestversion.ini") Then $local_loop = 1 ; keep looping until file exists
+			$local_loop_count=$local_loop_count+1
+			If $local_loop_count > 20 Then $local_loop = 1
+		WEnd
+		
+		;#######################################################################################
+		; Check for latest release
+		;#######################################################################################
+		If IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "INETUPDATE", 1) = 1 Then
+			$V2M_EventDisplay = V2M_EventLog("Updates - checking the downloaded version file, and comparing version numbers", $V2M_EventDisplay, 'dll')
+			If IniRead(@TempDir & "\v2m_latestversion.ini", "VNC2Me", "LatestBeta", FileGetVersion(@ScriptFullPath)) <> FileGetVersion(@ScriptFullPath) Then
+				$V2M_EventDisplay = V2M_EventLog("Updates - Version of App and version in file differ, this (usually) means an update is available.", $V2M_EventDisplay, 'dll')
+				MsgBox(0, "VNC2Me Updates", "Later release available on the website" & @CRLF & @CRLF & "http://vnc2me.org/" & @CRLF & @CRLF & "Thankyou for using VNC2Me products, please give feedback on the forum")
+			Else
+				$V2M_EventDisplay = V2M_EventLog("Updates - Latest Version of App.", $V2M_EventDisplay, 'dll')
+			EndIf
+		EndIf
+
+		;#######################################################################################
+		; check for testing release
+		;#######################################################################################
+		If IniRead(@ScriptDir & "\vnc2me_sc.ini", "Common", "TESTUPDATE", 0) = 1 Then
+			$V2M_EventDisplay = V2M_EventLog("Updates - TEST - checking the downloaded version file, and comparing version numbers.", $V2M_EventDisplay, 'dll')
+			If IniRead(@TempDir & "\v2m_latestversion.ini", "VNC2Me", "LatestTesting", FileGetVersion(@ScriptFullPath)) <> FileGetVersion(@ScriptFullPath) Then
+				$V2M_EventDisplay = V2M_EventLog("Updates - TEST - Version of App and version in file differ, this (usually) means an update is available.", $V2M_EventDisplay, 'dll')
+				MsgBox(0, "VNC2Me Updates", "There is an updated Testing version available" & @CRLF & @CRLF & "Contact JDaus for update URL..." & @CRLF & @CRLF & "Thankyou for helping test VNC2Me products", 10)
+			Else
+				$V2M_EventDisplay = V2M_EventLog("Updates - TEST - Latest Version of App.", $V2M_EventDisplay, 'dll')
+				MsgBox(0, "VNC2Me Updates", "You are using the latest TESTING version", 10)
+			EndIf
+		EndIf
+	EndIf
+EndFunc   ;==>V2M_Update
+
 ;=========================================================================================================================================================
 ;============================================================== Vista Functions ==========================================================================
 ;=========================================================================================================================================================
+
+;===============================================================================
+;
+; Description:		Turns Vistas AERO on and off
+; Parameter(s):		$control
+;							if $control = "Enable" then turn AERO on
+;							if $control <> "Disable" then turn AERO off
+; Requirement(s):	Needs vista to work (not checked for in function)
+; Return Value(s):	nill
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
 
 Func Vista_ControlAero($control = "Enable")
 	Local $DWMdll = DllOpen("dwmapi.dll")
@@ -665,12 +833,36 @@ Func Vista_ControlAero($control = "Enable")
 	EndIf
 EndFunc   ;==>Vista_ControlAero
 
+;===============================================================================
+;
+; Description:		Returns whether AERO is on or off
+; Parameter(s):		nill
+; Requirement(s):	Needs vista to work (not checked for in function)
+; Return Value(s):	$status[1] which (should) contain information about the state of AERO
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
+
 Func Vista_GetComposition()
 	Local $DWMdll = DllOpen("dwmapi.dll")
 	Local $status[10]
 	$status = DllCall($DWMdll, "int", "DwmIsCompositionEnabled", "int*", "")
 	Return $status[1]
 EndFunc   ;==>Vista_GetComposition
+
+;===============================================================================
+;
+; Description:		Turns Vistas UAC on and off instantly (no reboot needed)
+; Parameter(s):		$control
+;							if $control = "Enable" then turn UAC on
+;							if $control <> "Disable" then turn UAC off
+; Requirement(s):	Admin Priviledges
+; Return Value(s):	nill
+; Author(s):		Jim Dolby
+; Note(s):
+;
+;===============================================================================
 
 Func Vista_ControlUAC($control = "Enable")
 	Local $curVal
@@ -701,6 +893,8 @@ Func Vista_ControlUAC($control = "Enable")
 		EndIf
 	EndIf
 EndFunc   ;==>Vista_ControlUAC
+
+
 
 ;=========================================================================================================================================================
 ;=========================================================================================================================================================
@@ -784,5 +978,3 @@ EndFunc   ;==>Vista_ControlUAC
 ;	GUICtrlSetData($hMapLetter, $gMapLetter)
 ;	GUICtrlSetData($hMapPasswordEdit, $gMapPassword)
 ;EndFunc   ;==>SettingsToGUI
-
-;=========================================================================================================================================================;### Tidy Error -> func is never closed in your script.;### Tidy Error -> func is never closed in your script.
