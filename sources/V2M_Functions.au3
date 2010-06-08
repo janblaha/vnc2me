@@ -552,6 +552,12 @@ Func OnAutoItExit()
 		Vista_ControlUAC("Enable")
 		;Enable Aero
 		Vista_ControlAero("Enable")
+	ElseIf @OSVersion = "WIN_7" Or @OSVersion = "WIN_2008" Or @OSVersion = "WIN_2008R2" Then
+		YTS_EventLog("EXIT - @OSVersion = WIN_VISTA ", $V2M_EventDisplay, '8')
+		;Enable UAC
+		Vista_ControlUAC("Enable")
+		;Enable Aero
+		WIN7_ControlAero("Enable")
 	EndIf
 	;turn the wallpaper back on ...
 	DllCall("user32.dll", "int", "SystemParametersInfo", "int", 20, "int", 0, "str", RegRead("HKEY_CURRENT_USER\Control Panel\Desktop", "Wallpaper"), "int", 3)
@@ -944,6 +950,15 @@ Func Vista_ControlAero($control = "Enable")
 	EndIf
 EndFunc   ;==>Vista_ControlAero
 
+Func WIN7_ControlAero($control = "Enable")
+	;	Local $DWMdll = DllOpen("dwmapi.dll")
+	If $control = "Disable" Then
+		DllCall("dwmapi.dll", "hwnd", "DwmEnableComposition", "uint", $DWM_EC_DISABLECOMPOSITION)
+	Else
+		DllCall("dwmapi.dll", "hwnd", "DwmEnableComposition", "uint", $DWM_EC_ENABLECOMPOSITION)
+	EndIf
+EndFunc   ;==>WIN7_ControlAero
+
 ;===============================================================================
 ;
 ; Description:		Returns whether AERO is on or off
@@ -994,13 +1009,13 @@ Func Vista_ControlUAC($control = "Enable")
 		EndIf
 	ElseIf $control = "Enable" Then
 		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_V2M")
-		If $curVal = 0 Or $curVal = 1 Then
+		If $curVal <> "" Then
 			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop", "REG_DWORD", $curVal)
 			RegDelete("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "PromptOnSecureDesktop_V2M")
 		EndIf
 
 		$curVal = RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_V2M")
-		If $curVal = 0 Or $curVal = 1 Or $curVal = 2 Then
+		If $curVal <> "" Then
 			RegWrite("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin", "REG_DWORD", $curVal)
 			RegDelete("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin_V2M")
 		EndIf

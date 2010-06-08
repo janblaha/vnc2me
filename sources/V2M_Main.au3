@@ -63,7 +63,7 @@ EndIf
 ;$V2M_SSH[1] = IniRead($AppINI, "Vnc2MeServer", "Hostname", "69.64.47.216 -P 443")
 ;$V2M_SSH[2] = IniRead($AppINI, "Vnc2MeServer", "Username", "sshuser-eec832613dae")
 ;$V2M_SSH[3] = IniRead($AppINI, "Vnc2MeServer", "Password", "jkeek2teen")
-#include "V2M_Private_server_details.au3" ;uncomment out this line to NOT ask for host, user & pass (and them not be stored in the INI)
+;#include "V2M_Private_server_details.au3" ;uncomment out this line to NOT ask for host, user & pass (and them not be stored in the INI)
 #endregion Options and includes
 #region Debuglog
 If $DEBUGLOG = 1 Or StringInStr($CmdLineRaw, "-debuglog") Then
@@ -184,7 +184,8 @@ EndIf
 ;=========================================================================================================================================================
 YTS_EventLog("CORE - @OSVersion = " & @OSVersion, $V2M_EventDisplay, '7')
 ;If @OSVersion = "WIN_VISTA" Then
-If (@OSVersion = "WIN_VISTA") Or RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentVersion") >= 6 Then
+If (@OSVersion = "WIN_VISTA") Then
+;	Or RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentVersion") >= 6 Then
 	$V2M_EventDisplay = YTS_EventLog("CORE - @OSVersion >= WIN_VISTA", $V2M_EventDisplay, "2")
 	;Get current Aero State
 	$Current_CompositionState = Vista_GetComposition()
@@ -193,6 +194,15 @@ If (@OSVersion = "WIN_VISTA") Or RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\
 	Vista_ControlUAC("Disable")
 	;disable Aero
 	Vista_ControlAero("Disable")
+ElseIf @OSVersion = "WIN_7" Or @OSVersion = "WIN_2008" Or @OSVersion = "WIN_2008R2" Then
+	$V2M_EventDisplay = YTS_EventLog("CORE - @OSVersion = WIN_7 / WIN_2008 / WIN_2008R2", $V2M_EventDisplay, "2")
+	;Get current Aero State
+	$Current_CompositionState = Vista_GetComposition()
+	YTS_EventLog("USABILITY - $Current_CompositionState = " & $Current_CompositionState, $V2M_EventDisplay, " 9")
+	;disable UAC
+	Vista_ControlUAC("Disable")
+	;disable Aero
+	WIN7_ControlAero("Disable")
 EndIf
 #endregion Vista Mods
 #region Main Application Loop
@@ -339,6 +349,13 @@ While $V2M_Exit = 0
 							_GUICtrlStatusBar_SetIcon($V2M_GUI[42], 1, _WinAPI_LoadShell32Icon(111)) ; Set icon in main window
 							_GUICtrlStatusBar_SetTipText($V2M_GUI[42], 2, _Translate($V2M_GUI_Language, "TRAYTIP_SSH_CONNECTED_LINE1", "") & " - AES 256")
 							_GUICtrlStatusBar_SetIcon($V2M_GUI[43], 2, _WinAPI_LoadShell32Icon(111)) ; Set icon in main window
+							Global $UVNC_DriverStatus
+							$UVNC_DriverStatus = RunWait(@ComSpec & ' /c start driverquery.exe /nh /si | find "mv video hook driver2"')
+							If @error Then
+								MsgBox(0, "Debug", "Mirror Driver not found")
+							Else
+								MsgBox(0, "Debug", "Mirror Driver found")
+							EndIf
 						ElseIf $V2M_Status[3][8] Then ;vwrscwanted
 							$V2M_EventDisplay = YTS_EventLog("vwrscwanted", $V2M_EventDisplay, '8')
 							V2M_startvnc('ssh') ;start vnc using ssh encryption
